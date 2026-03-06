@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "737977511006",
+    "project_id": "truckcab-76a46",
+    "storage_bucket": "truckcab-76a46.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:737977511006:android:dffe210164ef9e0dd258cf",
+        "android_client_info": {
+          "package_name": "com.example.truckcab"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "737977511006-78i0ff5crp3t21kih4fp37bah23qtrm2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAO-eUVb85W8XX7u1_MogbO0s_IZ9VA4hg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "737977511006-78i0ff5crp3t21kih4fp37bah23qtrm2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "737977511006-jd7oh3k0cabngadkueq6bl4nb4kcv3jh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.truckcab"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
