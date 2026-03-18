@@ -71,7 +71,7 @@ class AuthService {
       return userCredential;
     } on FirebaseAuthException {
       rethrow;
-    } catch (e) {
+    } catch (_) {
       throw FirebaseAuthException(
         code: 'signup-failed',
         message: 'Failed to sign up user. Please try again.',
@@ -109,7 +109,7 @@ class AuthService {
       return userCredential;
     } on FirebaseAuthException {
       rethrow;
-    } catch (e) {
+    } catch (_) {
       throw FirebaseAuthException(
         code: 'login-failed',
         message: 'Failed to log in. Please try again.',
@@ -122,7 +122,7 @@ class AuthService {
       await _firebaseAuth.signOut();
     } on FirebaseAuthException {
       rethrow;
-    } catch (e) {
+    } catch (_) {
       throw FirebaseAuthException(
         code: 'logout-failed',
         message: 'Failed to log out. Please try again.',
@@ -140,7 +140,10 @@ class AuthService {
         'userId': userId,
         'email': email,
         'role': role,
+        'isOnline': true,
+        'lastSeen': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
     } on FirebaseException catch (e) {
       await _deleteAuthUserIfPossible();
@@ -149,7 +152,7 @@ class AuthService {
         code: 'firestore-user-create-failed',
         message: e.message ?? 'Failed to create user profile in Firestore.',
       );
-    } catch (e) {
+    } catch (_) {
       await _deleteAuthUserIfPossible();
 
       throw FirebaseAuthException(
@@ -166,8 +169,7 @@ class AuthService {
         await user.delete();
       }
     } catch (_) {
-      // Intentionally ignored.
-      // If delete fails, we still want to surface the original Firestore error.
+      // ignored on purpose
     }
   }
 }

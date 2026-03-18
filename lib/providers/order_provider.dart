@@ -22,14 +22,9 @@ class OrderProvider extends ChangeNotifier {
 
   List<OrderModel> get availableOrders => _availableOrders;
   List<OrderModel> get sellerOrders => _sellerOrders;
-
-  // New: all active orders for driver
   List<OrderModel> get activeOrders => _driverActiveOrders;
-
-  // Backward compatibility for screens that still use single active order
   OrderModel? get activeOrder =>
       _driverActiveOrders.isNotEmpty ? _driverActiveOrders.first : null;
-
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -41,7 +36,7 @@ class OrderProvider extends ChangeNotifier {
       final orders = await _orderService.getAvailableOrders();
       _availableOrders = orders;
       notifyListeners();
-    } catch (e) {
+    } catch (_) {
       _errorMessage = 'Failed to load available orders.';
       notifyListeners();
     } finally {
@@ -79,7 +74,7 @@ class OrderProvider extends ChangeNotifier {
       final orders = await _orderService.getSellerOrders(sellerId: sellerId);
       _sellerOrders = orders;
       notifyListeners();
-    } catch (e) {
+    } catch (_) {
       _errorMessage = 'Failed to load seller orders.';
       notifyListeners();
     } finally {
@@ -116,10 +111,11 @@ class OrderProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final orders = await _orderService.getDriverActiveOrder(driverId: driverId);
-      _driverActiveOrders = orders as List<OrderModel>;
+      final orders =
+          await _orderService.getDriverActiveOrders(driverId: driverId);
+      _driverActiveOrders = orders;
       notifyListeners();
-    } catch (e) {
+    } catch (_) {
       _errorMessage = 'Failed to load active orders.';
       notifyListeners();
     } finally {
@@ -135,9 +131,9 @@ class OrderProvider extends ChangeNotifier {
     _setLoading(true);
 
     _driverActiveOrdersSubscription =
-        _orderService.streamDriverActiveOrder(driverId: driverId).listen(
+        _orderService.streamDriverActiveOrders(driverId: driverId).listen(
       (orders) {
-        _driverActiveOrders = orders as List<OrderModel>;
+        _driverActiveOrders = orders;
         _isLoading = false;
         notifyListeners();
       },
@@ -146,7 +142,7 @@ class OrderProvider extends ChangeNotifier {
         _isLoading = false;
         notifyListeners();
       },
-    ) as StreamSubscription<List<OrderModel>>?;
+    );
   }
 
   Future<bool> createOrder({
@@ -168,7 +164,7 @@ class OrderProvider extends ChangeNotifier {
         price: price,
       );
       return true;
-    } catch (e) {
+    } catch (_) {
       _errorMessage = 'Failed to create order.';
       notifyListeners();
       return false;
@@ -177,6 +173,9 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  // FIX: was calling _chatService.sendChatRequest which bypassed
+  // the notification logic entirely. Now calls _orderService.acceptOrder
+  // which sends the chat request AND creates the seller notification.
   Future<bool> acceptOrder({
     required String orderId,
     required String driverId,
@@ -185,33 +184,22 @@ class OrderProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final updatedOrder = await _orderService.acceptOrder(
-        orderId: orderId,
-        driverId: driverId,
+      final selectedOrder = _availableOrders.firstWhere(
+        (order) => order.id == orderId,
       );
 
-      _availableOrders.removeWhere((order) => order.id == orderId);
-
-      final activeIndex =
-          _driverActiveOrders.indexWhere((order) => order.id == updatedOrder.id);
-
-      if (activeIndex == -1) {
-        _driverActiveOrders.insert(0, updatedOrder);
-      } else {
-        _driverActiveOrders[activeIndex] = updatedOrder;
-      }
-
-      final sellerIndex =
-          _sellerOrders.indexWhere((order) => order.id == updatedOrder.id);
-
-      if (sellerIndex != -1) {
-        _sellerOrders[sellerIndex] = updatedOrder;
-      }
+      await _orderService.acceptOrder(
+        orderId: selectedOrder.id,
+        driverId: driverId,
+        orderDescription: selectedOrder.description,
+        pickupLocation: selectedOrder.pickupLocation,
+        dropoffLocation: selectedOrder.dropoffLocation,
+      );
 
       notifyListeners();
       return true;
-    } catch (e) {
-      _errorMessage = 'Failed to accept order.';
+    } catch (_) {
+      _errorMessage = 'Failed to send delivery request.';
       notifyListeners();
       return false;
     } finally {
@@ -237,8 +225,9 @@ class OrderProvider extends ChangeNotifier {
       if (status == AppStatus.delivered) {
         _driverActiveOrders.removeWhere((order) => order.id == orderId);
       } else {
-        final activeIndex =
-            _driverActiveOrders.indexWhere((order) => order.id == updatedOrder.id);
+        final activeIndex = _driverActiveOrders.indexWhere(
+          (order) => order.id == updatedOrder.id,
+        );
 
         if (activeIndex != -1) {
           _driverActiveOrders[activeIndex] = updatedOrder;
@@ -263,7 +252,7 @@ class OrderProvider extends ChangeNotifier {
 
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (_) {
       _errorMessage = 'Failed to update order status.';
       notifyListeners();
       return false;

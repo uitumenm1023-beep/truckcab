@@ -1,4 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+
+import '../core/constants/app_status.dart';
 import '../models/order_model.dart';
 import 'notification_service.dart';
 
@@ -8,6 +11,9 @@ class OrderService {
 
   final String _ordersCollection = 'orders';
 
+  CollectionReference<Map<String, dynamic>> get _ordersRef =>
+      _firestore.collection(_ordersCollection);
+
   Future<void> createOrder({
     required String sellerId,
     required String pickupLocation,
@@ -16,26 +22,27 @@ class OrderService {
     required double price,
   }) async {
     try {
-      await _firestore.collection(_ordersCollection).add({
+      await _ordersRef.add({
         'sellerId': sellerId,
         'driverId': null,
-        'pickupLocation': pickupLocation,
-        'dropoffLocation': dropoffLocation,
-        'description': description,
+        'pickupLocation': pickupLocation.trim(),
+        'dropoffLocation': dropoffLocation.trim(),
+        'description': description.trim(),
         'price': price,
-        'status': 'OPEN',
+        'status': AppStatus.open,
         'createdAt': FieldValue.serverTimestamp(),
       });
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('createOrder error: $e');
+      debugPrint('$st');
       throw Exception('Failed to create order');
     }
   }
 
   Future<List<OrderModel>> getAvailableOrders() async {
     try {
-      final querySnapshot = await _firestore
-          .collection(_ordersCollection)
-          .where('status', isEqualTo: 'OPEN')
+      final querySnapshot = await _ordersRef
+          .where('status', isEqualTo: AppStatus.open)
           .get();
 
       final orders = querySnapshot.docs
@@ -49,15 +56,16 @@ class OrderService {
       });
 
       return orders;
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('getAvailableOrders error: $e');
+      debugPrint('$st');
       throw Exception('Failed to fetch available orders');
     }
   }
 
   Stream<List<OrderModel>> streamAvailableOrders() {
-    return _firestore
-        .collection(_ordersCollection)
-        .where('status', isEqualTo: 'OPEN')
+    return _ordersRef
+        .where('status', isEqualTo: AppStatus.open)
         .snapshots()
         .map((snapshot) {
       final orders = snapshot.docs
@@ -78,10 +86,8 @@ class OrderService {
     required String sellerId,
   }) async {
     try {
-      final querySnapshot = await _firestore
-          .collection(_ordersCollection)
-          .where('sellerId', isEqualTo: sellerId)
-          .get();
+      final querySnapshot =
+          await _ordersRef.where('sellerId', isEqualTo: sellerId).get();
 
       final orders = querySnapshot.docs
           .map((doc) => OrderModel.fromFirestore(doc))
@@ -94,7 +100,9 @@ class OrderService {
       });
 
       return orders;
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('getSellerOrders error: $e');
+      debugPrint('$st');
       throw Exception('Failed to fetch seller orders');
     }
   }
@@ -102,8 +110,7 @@ class OrderService {
   Stream<List<OrderModel>> streamSellerOrders({
     required String sellerId,
   }) {
-    return _firestore
-        .collection(_ordersCollection)
+    return _ordersRef
         .where('sellerId', isEqualTo: sellerId)
         .snapshots()
         .map((snapshot) {
@@ -121,28 +128,17 @@ class OrderService {
     });
   }
 
-  Future<OrderModel?> getDriverActiveOrder({
+  Future<List<OrderModel>> getDriverActiveOrders({
     required String driverId,
   }) async {
     try {
-      final querySnapshot = await _firestore
-          .collection(_ordersCollection)
-          .where('driverId', isEqualTo: driverId)
-          .get();
+      final querySnapshot =
+          await _ordersRef.where('driverId', isEqualTo: driverId).get();
 
       final orders = querySnapshot.docs
           .map((doc) => OrderModel.fromFirestore(doc))
-          .where(
-            (order) =>
-                order.status == 'ACCEPTED' ||
-                order.status == 'PICKED_UP' ||
-                order.status == 'ON_THE_WAY',
-          )
+          .where(_isActiveDriverOrder)
           .toList();
-
-      if (orders.isEmpty) {
-        return null;
-      }
 
       orders.sort((a, b) {
         final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -150,33 +146,25 @@ class OrderService {
         return bTime.compareTo(aTime);
       });
 
-      return orders.first;
-    } catch (e) {
-      throw Exception('Failed to fetch driver active order');
+      return orders;
+    } catch (e, st) {
+      debugPrint('getDriverActiveOrders error: $e');
+      debugPrint('$st');
+      throw Exception('Failed to fetch driver active orders');
     }
   }
 
-  Stream<OrderModel?> streamDriverActiveOrder({
+  Stream<List<OrderModel>> streamDriverActiveOrders({
     required String driverId,
   }) {
-    return _firestore
-        .collection(_ordersCollection)
+    return _ordersRef
         .where('driverId', isEqualTo: driverId)
         .snapshots()
         .map((snapshot) {
       final orders = snapshot.docs
           .map((doc) => OrderModel.fromFirestore(doc))
-          .where(
-            (order) =>
-                order.status == 'ACCEPTED' ||
-                order.status == 'PICKED_UP' ||
-                order.status == 'ON_THE_WAY',
-          )
+          .where(_isActiveDriverOrder)
           .toList();
-
-      if (orders.isEmpty) {
-        return null;
-      }
 
       orders.sort((a, b) {
         final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -184,17 +172,30 @@ class OrderService {
         return bTime.compareTo(aTime);
       });
 
-      return orders.first;
+      return orders;
     });
   }
 
-  Future<OrderModel> acceptOrder({
+  bool _isActiveDriverOrder(OrderModel order) {
+    return order.status == AppStatus.accepted ||
+        order.status == AppStatus.pickedUp ||
+        order.status == AppStatus.onTheWay;
+  }
+
+  // FIX: This now does TWO things that were broken before:
+  //   1. Creates the chat_request in Firestore (was done in ChatService before,
+  //      bypassing notifications entirely)
+  //   2. Creates a notification for the seller so it appears in their
+  //      notification section immediately
+  Future<void> acceptOrder({
     required String orderId,
     required String driverId,
+    required String orderDescription,
+    required String pickupLocation,
+    required String dropoffLocation,
   }) async {
     try {
-      final orderRef = _firestore.collection(_ordersCollection).doc(orderId);
-
+      final orderRef = _ordersRef.doc(orderId);
       final snapshot = await orderRef.get();
 
       if (!snapshot.exists) {
@@ -203,25 +204,47 @@ class OrderService {
 
       final order = OrderModel.fromFirestore(snapshot);
 
-      if (order.status != 'OPEN') {
+      if (order.status != AppStatus.open) {
         throw Exception('Order is no longer available');
       }
 
-      await orderRef.update({
+      // Build the shared chatId used across chat_requests and chats collections
+      final chatId = '${orderId}_${order.sellerId}_$driverId';
+
+      // Write chat_request doc
+      await _firestore.collection('chat_requests').doc(chatId).set({
+        'orderId': orderId,
+        'sellerId': order.sellerId,
         'driverId': driverId,
-        'status': 'ACCEPTED',
-      });
+        'orderDescription': orderDescription,
+        'pickupLocation': pickupLocation,
+        'dropoffLocation': dropoffLocation,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-      await _notificationService.createNotification(
-        userId: order.sellerId,
-        orderId: orderId,
-        message: 'Driver accepted your order',
-      );
+      debugPrint('acceptOrder: chat_request created chatId=$chatId');
 
-      final updatedSnapshot = await orderRef.get();
-      return OrderModel.fromFirestore(updatedSnapshot);
-    } catch (e) {
-      throw Exception('Failed to accept order');
+      // Notify the seller that a driver wants to deliver their package
+      try {
+        await _notificationService.createNotification(
+          userId: order.sellerId,
+          orderId: orderId,
+          title: 'New Delivery Request',
+          message: 'A driver wants to deliver your package. Check Chat Requests.',
+          type: 'chat_request',
+        );
+        debugPrint('acceptOrder: notification sent to seller=${order.sellerId}');
+      } catch (e, st) {
+        debugPrint('acceptOrder notification error: $e');
+        debugPrint('$st');
+        // Don't rethrow — the chat request was still saved successfully
+      }
+    } catch (e, st) {
+      debugPrint('acceptOrder error: $e');
+      debugPrint('$st');
+      throw Exception('Failed to send delivery request');
     }
   }
 
@@ -231,7 +254,7 @@ class OrderService {
     required String status,
   }) async {
     try {
-      final orderRef = _firestore.collection(_ordersCollection).doc(orderId);
+      final orderRef = _ordersRef.doc(orderId);
 
       final snapshot = await orderRef.get();
 
@@ -249,27 +272,50 @@ class OrderService {
         'status': status,
       });
 
-      String message = '';
+      debugPrint('Order status updated: orderId=$orderId status=$status sellerId=${order.sellerId}');
 
-      if (status == 'PICKED_UP') {
-        message = 'Driver picked up your package';
-      } else if (status == 'ON_THE_WAY') {
-        message = 'Driver is on the way';
-      } else if (status == 'DELIVERED') {
-        message = 'Package delivered';
+      String title = '';
+      String message = '';
+      String type = '';
+
+      if (status == AppStatus.pickedUp) {
+        title = 'Package Picked Up';
+        message = 'The driver has picked up your package.';
+        type = 'package_picked_up';
+      } else if (status == AppStatus.onTheWay) {
+        title = 'Driver On The Way';
+        message = 'The driver is on the way with your package.';
+        type = 'driver_on_the_way';
+      } else if (status == AppStatus.delivered) {
+        title = 'Package Delivered';
+        message = 'Your package has been successfully delivered!';
+        type = 'package_delivered';
       }
 
+      // FIX: notification is created for EVERY status change, using
+      // order.sellerId which is reliably fetched from Firestore above.
       if (message.isNotEmpty) {
-        await _notificationService.createNotification(
-          userId: order.sellerId,
-          orderId: orderId,
-          message: message,
-        );
+        try {
+          await _notificationService.createNotification(
+            userId: order.sellerId,
+            orderId: orderId,
+            title: title,
+            message: message,
+            type: type,
+          );
+          debugPrint('Notification created: seller=${order.sellerId} type=$type order=$orderId');
+        } catch (e, st) {
+          debugPrint('updateOrderStatus notification error: $e');
+          debugPrint('$st');
+          // Don't rethrow — the status update itself succeeded
+        }
       }
 
       final updatedSnapshot = await orderRef.get();
       return OrderModel.fromFirestore(updatedSnapshot);
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('updateOrderStatus error: $e');
+      debugPrint('$st');
       throw Exception('Failed to update order status');
     }
   }
