@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../routes/app_routes.dart';
 
@@ -28,25 +29,23 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
 
       if (userId != null && userId.isNotEmpty) {
         _userId = userId;
-        // FIX: Start the global notification listener here.
-        // Because NotificationProvider.startNotificationsListener now checks
-        // if it's already listening for this user, opening NotificationScreen
-        // won't create a duplicate subscription — and closing it won't kill
-        // this one.
         notificationProvider.startNotificationsListener(userId);
+        // Start chat listener so seller's chat list populates automatically
+        context.read<ChatProvider>().startChatsListener(userId);
       }
     });
   }
 
   @override
   void dispose() {
-    // FIX: Pass the userId so the provider can verify it's the right caller.
-    // This prevents screen disposal from killing the wrong listener.
     try {
       context.read<NotificationProvider>().stopNotificationsListener(
         userId: _userId,
       );
       context.read<NotificationProvider>().clearNotifications();
+    } catch (_) {}
+    try {
+      context.read<ChatProvider>().stopChatsListener();
     } catch (_) {}
     super.dispose();
   }
@@ -57,6 +56,9 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
 
     notificationProvider.stopNotificationsListener(userId: _userId);
     notificationProvider.clearNotifications();
+    try {
+      context.read<ChatProvider>().stopChatsListener();
+    } catch (_) {}
 
     await authProvider.logout();
 

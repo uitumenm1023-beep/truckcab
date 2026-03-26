@@ -339,82 +339,184 @@ class _DriverActiveOrdersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final orderProvider = context.watch<OrderProvider>();
+    final authProvider = context.watch<AuthProvider>();
+    final driverId = authProvider.currentUserId ?? '';
 
     return RefreshIndicator(
       onRefresh: onRefresh,
-      child: orderProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : orderProvider.activeOrders.isEmpty
-              ? ListView(
-                  children: const [
-                    SizedBox(height: 220),
-                    Center(child: Text('No active orders')),
-                  ],
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: orderProvider.activeOrders.length,
-                  itemBuilder: (context, index) {
-                    final order = orderProvider.activeOrders[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              order.description,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text('Pickup: ${order.pickupLocation}'),
-                            Text('Dropoff: ${order.dropoffLocation}'),
-                            Text(
-                                'Price: \$${order.price.toStringAsFixed(2)}'),
-                            Text('Status: ${order.status}'),
-                            const SizedBox(height: 14),
-                            _DriverChatButton(order: order),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                if (order.status == AppStatus.accepted)
-                                  ElevatedButton(
-                                    onPressed: () => onUpdateStatus(
-                                      order,
-                                      AppStatus.pickedUp,
-                                    ),
-                                    child: const Text('Picked Up'),
-                                  ),
-                                if (order.status == AppStatus.pickedUp)
-                                  ElevatedButton(
-                                    onPressed: () => onUpdateStatus(
-                                      order,
-                                      AppStatus.onTheWay,
-                                    ),
-                                    child: const Text('On The Way'),
-                                  ),
-                                if (order.status == AppStatus.onTheWay)
-                                  ElevatedButton(
-                                    onPressed: () => onUpdateStatus(
-                                      order,
-                                      AppStatus.delivered,
-                                    ),
-                                    child: const Text('Delivered'),
-                                  ),
-                              ],
-                            ),
-                          ],
+      child: CustomScrollView(
+        slivers: [
+          // ── Stage 1: requests pending seller approval or in chat ──────────
+          SliverToBoxAdapter(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('chat_requests')
+                  .where('driverId', isEqualTo: driverId)
+                  .where('status', whereIn: ['pending', 'chat_open'])
+                  .snapshots(),
+              builder: (context, snapshot) {
+                final docs = snapshot.data?.docs ?? [];
+                if (docs.isEmpty) return const SizedBox.shrink();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Text(
+                        'Awaiting Seller Approval',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                          fontSize: 14,
                         ),
                       ),
-                    );
-                  },
+                    ),
+                    ...docs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final orderId = (data['orderId'] ?? '').toString();
+                      final sellerId = (data['sellerId'] ?? '').toString();
+                      final desc =
+                          (data['orderDescription'] ?? 'Order').toString();
+                      final pickup =
+                          (data['pickupLocation'] ?? '').toString();
+                      final dropoff =
+                          (data['dropoffLocation'] ?? '').toString();
+                      final reqStatus = (data['status'] ?? '').toString();
+                      final chatId = '${orderId}_${sellerId}_$driverId';
+
+                      return Card(
+                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(desc,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16)),
+                              const SizedBox(height: 8),
+                              Text('Pickup: $pickup'),
+                              Text('Dropoff: $dropoff'),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: reqStatus == 'chat_open'
+                                      ? Colors.green.withOpacity(0.15)
+                                      : Colors.orange.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  reqStatus == 'chat_open'
+                                      ? 'Chat open — waiting for final approval'
+                                      : 'Waiting for seller to open chat',
+                                  style: TextStyle(
+                                    color: reqStatus == 'chat_open'
+                                        ? Colors.green
+                                        : Colors.orange,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              if (reqStatus == 'chat_open') ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        AppRoutes.chatScreen,
+                                        arguments: ChatScreenArgs(
+                                          chatId: chatId,
+                                          title: desc,
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(
+                                        Icons.chat_bubble_outline),
+                                    label: const Text('Open Chat'),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                );
+              },
+            ),
+          ),
+
+          // ── Stage 2+: orders where driverId is set (ACCEPTED and beyond) ─
+          orderProvider.activeOrders.isEmpty
+              ? const SliverToBoxAdapter(child: SizedBox.shrink())
+              : SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final order = orderProvider.activeOrders[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(order.description,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16)),
+                                const SizedBox(height: 8),
+                                Text('Pickup: ${order.pickupLocation}'),
+                                Text('Dropoff: ${order.dropoffLocation}'),
+                                Text(
+                                    'Price: \$${order.price.toStringAsFixed(2)}'),
+                                Text('Status: ${order.status}'),
+                                const SizedBox(height: 14),
+                                _DriverChatButton(order: order),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    if (order.status == AppStatus.accepted)
+                                      ElevatedButton(
+                                        onPressed: () => onUpdateStatus(
+                                            order, AppStatus.pickedUp),
+                                        child: const Text('Picked Up'),
+                                      ),
+                                    if (order.status == AppStatus.pickedUp)
+                                      ElevatedButton(
+                                        onPressed: () => onUpdateStatus(
+                                            order, AppStatus.onTheWay),
+                                        child: const Text('On The Way'),
+                                      ),
+                                    if (order.status == AppStatus.onTheWay)
+                                      ElevatedButton(
+                                        onPressed: () => onUpdateStatus(
+                                            order, AppStatus.delivered),
+                                        child: const Text('Delivered'),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                      childCount: orderProvider.activeOrders.length,
+                    ),
+                  ),
                 ),
+        ],
+      ),
     );
   }
 }
@@ -422,23 +524,26 @@ class _DriverActiveOrdersTab extends StatelessWidget {
 class _DriverChatButton extends StatelessWidget {
   final OrderModel order;
 
-  const _DriverChatButton({
-    required this.order,
-  });
-
-  String _buildChatId() {
-    final driverId = order.driverId ?? '';
-    return '${order.id}_${order.sellerId}_$driverId';
-  }
+  const _DriverChatButton({required this.order});
 
   @override
   Widget build(BuildContext context) {
-    final driverId = order.driverId ?? '';
-    if (driverId.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    // We need the current driver's id to build the chatId correctly,
+    // because order.driverId is only set AFTER Stage-2 final approval.
+    // During Stage 1 (chat_open) the order still has driverId == null.
+    final authProvider = context.read<AuthProvider>();
+    final currentDriverId = authProvider.currentUserId ?? '';
 
-    final chatId = _buildChatId();
+    // chatId is always orderId_sellerId_driverId
+    // Use currentDriverId as fallback when order.driverId is not yet set.
+    final driverId =
+        (order.driverId != null && order.driverId!.isNotEmpty)
+            ? order.driverId!
+            : currentDriverId;
+
+    if (driverId.isEmpty) return const SizedBox.shrink();
+
+    final chatId = '${order.id}_${order.sellerId}_$driverId';
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -446,70 +551,70 @@ class _DriverChatButton extends StatelessWidget {
           .doc(chatId)
           .snapshots(),
       builder: (context, requestSnapshot) {
-        final exists = requestSnapshot.data?.exists ?? false;
-        final requestData = requestSnapshot.data?.data();
-        final requestMap = requestData is Map<String, dynamic>
-            ? requestData
-            : <String, dynamic>{};
-        final requestStatus = (requestMap['status'] ?? '').toString();
+        final reqData = requestSnapshot.data?.data();
+        final reqMap =
+            reqData is Map<String, dynamic> ? reqData : <String, dynamic>{};
+        final reqStatus = (reqMap['status'] ?? '').toString();
 
-        if (!exists || requestStatus == 'pending') {
+        // No request doc yet — still in transit
+        if (!( requestSnapshot.data?.exists ?? false)) {
           return const Text(
             'Waiting for seller approval',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: Colors.grey, fontSize: 13),
           );
         }
 
-        if (requestStatus == 'rejected') {
+        if (reqStatus == 'pending') {
+          return const Text(
+            'Waiting for seller to open chat',
+            style: TextStyle(color: Colors.orange, fontSize: 13),
+          );
+        }
+
+        if (reqStatus == 'rejected') {
           return const Text(
             'Seller rejected the delivery request',
-            style: TextStyle(
-              color: Colors.redAccent,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: Colors.redAccent, fontSize: 13),
           );
         }
 
-        return StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('chats')
-              .doc(chatId)
-              .snapshots(),
-          builder: (context, chatSnapshot) {
-            final chatExists = chatSnapshot.data?.exists ?? false;
+        // Stage 1 accepted (chat_open) OR Stage 2 approved — show Open Chat
+        if (reqStatus == 'chat_open' || reqStatus == 'approved') {
+          return StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('chats')
+                .doc(chatId)
+                .snapshots(),
+            builder: (context, chatSnapshot) {
+              if (!(chatSnapshot.data?.exists ?? false)) {
+                return const Text(
+                  'Preparing chat...',
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                );
+              }
 
-            if (!chatExists) {
-              return const Text(
-                'Preparing chat...',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 13,
+              return SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.chatScreen,
+                      arguments: ChatScreenArgs(
+                        chatId: chatId,
+                        title: order.description,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: const Text('Open Chat'),
                 ),
               );
-            }
+            },
+          );
+        }
 
-            return SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.chatScreen,
-                    arguments: ChatScreenArgs(
-                      chatId: chatId,
-                      title: order.description,
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.chat_bubble_outline),
-                label: const Text('Open Chat'),
-              ),
-            );
-          },
-        );
+        return const SizedBox.shrink();
       },
     );
   }

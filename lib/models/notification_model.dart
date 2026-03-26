@@ -4,6 +4,9 @@ class NotificationModel {
   final String id;
   final String userId;
   final String orderId;
+  // chatId is stored for chat-related notifications so the tap handler can
+  // navigate directly to the correct conversation without a Firestore lookup.
+  final String chatId;
   final String title;
   final String message;
   final String type;
@@ -14,6 +17,7 @@ class NotificationModel {
     required this.id,
     required this.userId,
     required this.orderId,
+    this.chatId = '',
     required this.title,
     required this.message,
     required this.type,
@@ -29,6 +33,7 @@ class NotificationModel {
       id: doc.id,
       userId: (data['userId'] ?? '').toString(),
       orderId: (data['orderId'] ?? '').toString(),
+      chatId: (data['chatId'] ?? '').toString(),
       title: (data['title'] ?? 'Order Update').toString(),
       message: (data['message'] ?? '').toString(),
       type: (data['type'] ?? 'order_update').toString(),
@@ -43,6 +48,7 @@ class NotificationModel {
     return {
       'userId': userId,
       'orderId': orderId,
+      'chatId': chatId,
       'title': title,
       'message': message,
       'type': type,
@@ -57,6 +63,7 @@ class NotificationModel {
     String? id,
     String? userId,
     String? orderId,
+    String? chatId,
     String? title,
     String? message,
     String? type,
@@ -67,6 +74,7 @@ class NotificationModel {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       orderId: orderId ?? this.orderId,
+      chatId: chatId ?? this.chatId,
       title: title ?? this.title,
       message: message ?? this.message,
       type: type ?? this.type,

@@ -1,21 +1,21 @@
 name: truckcab
-description: "A new Flutter project."
+description: "Truckcab is app that simplifies the drivers and sellers life."
 
 publish_to: 'none'
 
+version: 1.0.0+1
+
 environment:
-  sdk: ^3.11.0
+  sdk: ^3.7.0
 
 dependencies:
   flutter:
     sdk: flutter
-
-  firebase_core: ^2.30.0
-  firebase_auth: ^4.17.0
-  cloud_firestore: ^4.15.0
+  firebase_core: ^4.6.0
+  firebase_auth: ^6.3.0
+  cloud_firestore: ^6.2.0
   provider: ^6.1.2
-  audioplayers: ^6.1.0
-
+  audioplayers: ^6.6.0
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

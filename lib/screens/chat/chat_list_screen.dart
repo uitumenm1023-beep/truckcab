@@ -27,6 +27,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
       final authProvider = context.read<AuthProvider>();
       final chatProvider = context.read<ChatProvider>();
       final userId = authProvider.currentUserId;
+      // startChatsListener is idempotent — if SellerHomeScreen or
+      // DriverHomeScreen already started it for this user the call is
+      // a no-op. It acts as a safe fallback when this screen is pushed
+      // directly (e.g. from a notification tap).
       if (userId != null && userId.isNotEmpty) {
         chatProvider.startChatsListener(userId);
       }

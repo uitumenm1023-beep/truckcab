@@ -57,11 +57,15 @@ class ChatService {
     // the driver had no signal to refresh/navigate to chat.
     final driverId = (requestData['driverId'] ?? '').toString();
     final orderId = (requestData['orderId'] ?? '').toString();
+    final sellerId = (requestData['sellerId'] ?? '').toString();
+    // chatId = requestId (they share the same id: orderId_sellerId_driverId)
+    final chatId = requestId;
     if (driverId.isNotEmpty && orderId.isNotEmpty) {
       try {
         await _notificationService.createNotification(
           userId: driverId,
           orderId: orderId,
+          chatId: chatId,
           title: 'Chat Request Accepted',
           message: 'The seller accepted your request. You can now chat.',
           type: 'chat_accepted',
@@ -97,11 +101,13 @@ class ChatService {
     // Notify driver that they are confirmed for delivery
     final driverId = (requestData['driverId'] ?? '').toString();
     final orderId = (requestData['orderId'] ?? '').toString();
+    final chatId = requestId; // same id as chat_request doc
     if (driverId.isNotEmpty && orderId.isNotEmpty) {
       try {
         await _notificationService.createNotification(
           userId: driverId,
           orderId: orderId,
+          chatId: chatId,
           title: 'Delivery Approved',
           message: 'The seller approved you for delivery. You can start now.',
           type: 'delivery_approved',
@@ -114,22 +120,44 @@ class ChatService {
   }
 
   Future<void> rejectChatRequest(String requestId) async {
+    // Fetch first so we can notify the driver
+    final doc = await _firestore
+        .collection('chat_requests')
+        .doc(requestId)
+        .get();
+    final data = doc.data() ?? {};
+
     await _firestore.collection('chat_requests').doc(requestId).update({
       'status': 'rejected',
       'updatedAt': FieldValue.serverTimestamp(),
     });
+
+    final driverId = (data['driverId'] ?? '').toString();
+    final orderId  = (data['orderId']  ?? '').toString();
+    if (driverId.isNotEmpty && orderId.isNotEmpty) {
+      try {
+        await _notificationService.createNotification(
+          userId:  driverId,
+          orderId: orderId,
+          chatId:  requestId,
+          title:   'Request Rejected',
+          message: 'The seller rejected your delivery request.',
+          type:    'chat_rejected',
+        );
+      } catch (e) {
+        debugPrint('rejectChatRequest notification error: $e');
+      }
+    }
   }
 
   // ─── Chats ────────────────────────────────────────────────────────────────
 
-  // FIX: Chats are fetched with a real-time stream filtered by participantIds.
-  // This means as soon as a chat doc is created (on acceptChatRequest), BOTH
-  // seller and driver see it in their chat list — no refresh needed.
+  // getUserChats uses only a simple where filter — no orderBy — so it works
+  // without a composite Firestore index. We sort client-side in ChatProvider.
   Stream<QuerySnapshot> getUserChats(String userId) {
     return _firestore
         .collection('chats')
         .where('participantIds', arrayContains: userId)
-        .orderBy('updatedAt', descending: true)
         .snapshots();
   }
 
@@ -201,7 +229,6 @@ class ChatService {
     // FIX: notify the recipient of the new message
     if (recipientId.isNotEmpty && orderId.isNotEmpty) {
       try {
-        // Truncate long messages in the notification preview
         final preview = cleanText.length > 60
             ? '${cleanText.substring(0, 60)}...'
             : cleanText;
@@ -209,6 +236,7 @@ class ChatService {
         await _notificationService.createNotification(
           userId: recipientId,
           orderId: orderId,
+          chatId: chatId,
           title: 'New Message',
           message: preview,
           type: 'chat_message',

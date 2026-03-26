@@ -15,6 +15,7 @@ class NotificationService {
     required String userId,
     required String orderId,
     required String message,
+    String chatId = '',
     String title = 'Order Update',
     String type = 'order_update',
   }) async {
@@ -22,6 +23,7 @@ class NotificationService {
       final doc = await _notificationsRef.add({
         'userId': userId,
         'orderId': orderId,
+        'chatId': chatId,
         'title': title,
         'message': message,
         'type': type,
@@ -57,15 +59,24 @@ class NotificationService {
   }
 
   Stream<List<NotificationModel>> streamUserNotifications(String userId) {
+    // Note: No .orderBy() here — that would require a composite Firestore
+    // index (userId + createdAt). We sort client-side instead so the stream
+    // works out of the box without any index configuration.
     return _notificationsRef
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      debugPrint('Notification stream for $userId count=${snapshot.docs.length}');
-      return snapshot.docs
+      final list = snapshot.docs
           .map((doc) => NotificationModel.fromFirestore(doc))
           .toList();
+      // Sort newest first client-side
+      list.sort((a, b) {
+        final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
+      debugPrint('Notification stream for $userId count=${list.length}');
+      return list;
     });
   }
 

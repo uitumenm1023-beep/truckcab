@@ -1,4 +1,4 @@
-package com.example.truckcab
+package com.NEPTUNE.truckcab
 
 import io.flutter.embedding.android.FlutterActivity
 
