@@ -20,6 +20,11 @@ class OrderService {
     required String dropoffLocation,
     required String description,
     required double price,
+    double? pickupLat,
+    double? pickupLng,
+    double? dropoffLat,
+    double? dropoffLng,
+    List<String>? imageUrls,
   }) async {
     try {
       await _ordersRef.add({
@@ -31,6 +36,11 @@ class OrderService {
         'price': price,
         'status': AppStatus.open,
         'createdAt': FieldValue.serverTimestamp(),
+        if (pickupLat != null) 'pickupLat': pickupLat,
+        if (pickupLng != null) 'pickupLng': pickupLng,
+        if (dropoffLat != null) 'dropoffLat': dropoffLat,
+        if (dropoffLng != null) 'dropoffLng': dropoffLng,
+        'imageUrls': imageUrls ?? [],
       });
     } catch (e, st) {
       debugPrint('createOrder error: $e');
@@ -231,6 +241,7 @@ class OrderService {
         await _notificationService.createNotification(
           userId: order.sellerId,
           orderId: orderId,
+          chatId: chatId,
           title: 'New Delivery Request',
           message: 'A driver wants to deliver your package. Check Chat Requests.',
           type: 'chat_request',
@@ -295,10 +306,13 @@ class OrderService {
       // FIX: notification is created for EVERY status change, using
       // order.sellerId which is reliably fetched from Firestore above.
       if (message.isNotEmpty) {
+        // Reconstruct chatId so seller can tap through to the chat
+        final chatId = '${orderId}_${order.sellerId}_$driverId';
         try {
           await _notificationService.createNotification(
             userId: order.sellerId,
             orderId: orderId,
+            chatId: chatId,
             title: title,
             message: message,
             type: type,

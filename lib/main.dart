@@ -7,15 +7,12 @@ import 'providers/auth_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/order_provider.dart';
+import 'providers/payment_provider.dart';
 import 'routes/app_routes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const TruckCabApp());
 }
 
@@ -26,18 +23,11 @@ class TruckCabApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<AuthProvider>(
-          create: (_) => AuthProvider(),
-        ),
-        ChangeNotifierProvider<OrderProvider>(
-          create: (_) => OrderProvider(),
-        ),
-        ChangeNotifierProvider<NotificationProvider>(
-          create: (_) => NotificationProvider(),
-        ),
-        ChangeNotifierProvider<ChatProvider>(
-          create: (_) => ChatProvider(),
-        ),
+        ChangeNotifierProvider<AppAuthProvider>(create: (_) => AppAuthProvider()),
+        ChangeNotifierProvider<OrderProvider>(create: (_) => OrderProvider()),
+        ChangeNotifierProvider<NotificationProvider>(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider<ChatProvider>(create: (_) => ChatProvider()),
+        ChangeNotifierProvider<PaymentProvider>(create: (_) => PaymentProvider()),
       ],
       child: const _AppLifecycleGate(),
     );
@@ -46,13 +36,12 @@ class TruckCabApp extends StatelessWidget {
 
 class _AppLifecycleGate extends StatefulWidget {
   const _AppLifecycleGate();
-
-  @override
-  State<_AppLifecycleGate> createState() => _AppLifecycleGateState();
+  @override State<_AppLifecycleGate> createState() => _AppLifecycleGateState();
 }
 
-class _AppLifecycleGateState extends State<_AppLifecycleGate>
-    with WidgetsBindingObserver {
+class _AppLifecycleGateState extends State<_AppLifecycleGate> with WidgetsBindingObserver {
+  ThemeMode _themeMode = ThemeMode.dark;
+
   @override
   void initState() {
     super.initState();
@@ -61,7 +50,7 @@ class _AppLifecycleGateState extends State<_AppLifecycleGate>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    context.read<AuthProvider>().handleAppLifecycleState(state);
+    context.read<AppAuthProvider>().handleAppLifecycleState(state);
   }
 
   @override
@@ -70,35 +59,262 @@ class _AppLifecycleGateState extends State<_AppLifecycleGate>
     super.dispose();
   }
 
+  void _toggleTheme() {
+    setState(() => _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark);
+  }
+
+  // ── Dark theme ─────────────────────────────────────────────────────────────
+  static final _dark = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    scaffoldBackgroundColor: const Color(0xFF101216),
+    fontFamily: 'Roboto',
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF7B6CF6),
+      secondary: Color(0xFFFF5A1F),
+      surface: Color(0xFF1B1F26),
+      error: Colors.redAccent,
+    ),
+    splashColor: const Color(0x1A7B6CF6),
+    highlightColor: const Color(0x0D7B6CF6),
+    hoverColor: const Color(0x1A7B6CF6),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.transparent,
+      foregroundColor: Color(0xFFF5F7FA),
+      elevation: 0,
+      centerTitle: false,
+      titleTextStyle: TextStyle(color: Color(0xFFF5F7FA), fontSize: 24, fontWeight: FontWeight.w500),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: const Color(0xFF1B1F26),
+      indicatorColor: const Color(0x227B6CF6),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const IconThemeData(color: Color(0xFF7B6CF6));
+        }
+        return const IconThemeData(color: Color(0xFF98A1AE));
+      }),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const TextStyle(color: Color(0xFF7B6CF6), fontWeight: FontWeight.w700, fontSize: 12);
+        }
+        return const TextStyle(color: Color(0xFF98A1AE), fontSize: 12);
+      }),
+    ),
+  );
+
+  // ── Light theme ────────────────────────────────────────────────────────────
+  static final _light = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    scaffoldBackgroundColor: const Color(0xFFF2F3F8),
+    fontFamily: 'Roboto',
+    colorScheme: const ColorScheme.light(
+      primary: Color(0xFF7B6CF6),
+      secondary: Color(0xFFFF5A1F),
+      surface: Color(0xFFFFFFFF),
+      error: Colors.redAccent,
+    ),
+    splashColor: const Color(0x1A7B6CF6),
+    highlightColor: const Color(0x0D7B6CF6),
+    hoverColor: const Color(0x1A7B6CF6),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.transparent,
+      foregroundColor: Color(0xFF1A1A2E),
+      elevation: 0,
+      centerTitle: false,
+      titleTextStyle: TextStyle(color: Color(0xFF1A1A2E), fontSize: 24, fontWeight: FontWeight.w500),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: const Color(0xFFFFFFFF),
+      indicatorColor: const Color(0x227B6CF6),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const IconThemeData(color: Color(0xFF7B6CF6));
+        }
+        return const IconThemeData(color: Color(0xFF8A8FA8));
+      }),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'TruckCab',
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF101216),
-        fontFamily: 'Roboto',
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFFF5A1F),
-          secondary: Color(0xFFFF7A45),
-          surface: Color(0xFF1B1F26),
-          error: Colors.redAccent,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          foregroundColor: Color(0xFFF5F7FA),
-          elevation: 0,
-          centerTitle: false,
-          titleTextStyle: TextStyle(
-            color: Color(0xFFF5F7FA),
-            fontSize: 24,
-            fontWeight: FontWeight.w500,
+      theme: _light,
+      darkTheme: _dark,
+      themeMode: _themeMode,
+      initialRoute: AppRoutes.splash,
+      onGenerateRoute: AppRoutes.generateRoute,
+      // Pass toggle down via a simple inherited approach
+      builder: (ctx, child) => _ThemeToggleProvider(
+        themeMode: _themeMode,
+        onToggle: _toggleTheme,
+        child: _NotificationToastWrapper(child: child!),
+      ),
+    );
+  }
+}
+
+// ── Simple InheritedWidget to expose theme toggle ─────────────────────────────
+class _ThemeToggleProvider extends InheritedWidget {
+  final ThemeMode themeMode;
+  final VoidCallback onToggle;
+  const _ThemeToggleProvider({required this.themeMode, required this.onToggle, required super.child});
+
+  static _ThemeToggleProvider? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_ThemeToggleProvider>();
+
+  @override
+  bool updateShouldNotify(_ThemeToggleProvider old) =>
+      themeMode != old.themeMode;
+}
+
+// ── Extension for easy access ─────────────────────────────────────────────────
+extension ThemeToggle on BuildContext {
+  void toggleTheme() => _ThemeToggleProvider.of(this)?.onToggle();
+  ThemeMode get currentThemeMode => _ThemeToggleProvider.of(this)?.themeMode ?? ThemeMode.dark;
+}
+
+// ── In-app notification toast overlay ────────────────────────────────────────
+class _NotificationToastWrapper extends StatelessWidget {
+  final Widget child;
+  const _NotificationToastWrapper({required this.child});
+
+  IconData _iconFor(String type) {
+    switch (type) {
+      case 'package_delivered':
+      case 'delivery_approved': return Icons.check_circle_rounded;
+      case 'chat_request':
+      case 'chat_accepted':    return Icons.mark_chat_unread_outlined;
+      case 'chat_message':     return Icons.chat_bubble_rounded;
+      case 'package_picked_up': return Icons.inventory_2_rounded;
+      case 'driver_on_the_way': return Icons.local_shipping_rounded;
+      default:                 return Icons.notifications_rounded;
+    }
+  }
+
+  Color _colorFor(String type) {
+    switch (type) {
+      case 'package_delivered':
+      case 'delivery_approved': return const Color(0xFF22C55E);
+      case 'chat_message':
+      case 'chat_accepted':
+      case 'chat_request':     return const Color(0xFF7B6CF6);
+      default:                 return const Color(0xFFFF5A1F);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<NotificationProvider>(
+      builder: (ctx, notifProvider, _) {
+        final toast = notifProvider.toastNotification;
+        return Stack(children: [
+          child,
+          if (toast != null)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 12,
+              left: 16,
+              right: 16,
+              child: _ToastCard(
+                notification: toast,
+                color: _colorFor(toast.type),
+                icon: _iconFor(toast.type),
+                onDismiss: notifProvider.dismissToast,
+              ),
+            ),
+        ]);
+      },
+    );
+  }
+}
+
+class _ToastCard extends StatefulWidget {
+  final dynamic notification;
+  final Color color;
+  final IconData icon;
+  final VoidCallback onDismiss;
+  const _ToastCard({required this.notification, required this.color, required this.icon, required this.onDismiss});
+
+  @override
+  State<_ToastCard> createState() => _ToastCardState();
+}
+
+class _ToastCardState extends State<_ToastCard> with SingleTickerProviderStateMixin {
+  late final AnimationController _ac;
+  late final Animation<Offset>   _slide;
+  late final Animation<double>   _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _ac    = AnimationController(vsync: this, duration: const Duration(milliseconds: 380));
+    _slide = Tween<Offset>(begin: const Offset(0, -1.2), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _ac, curve: Curves.easeOutBack));
+    _fade  = CurvedAnimation(parent: _ac, curve: Curves.easeIn);
+    _ac.forward();
+  }
+
+  @override
+  void dispose() { _ac.dispose(); super.dispose(); }
+
+  Future<void> _dismiss() async {
+    await _ac.reverse();
+    widget.onDismiss();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final c = widget.color;
+    return SlideTransition(
+      position: _slide,
+      child: FadeTransition(
+        opacity: _fade,
+        child: Material(
+          color: Colors.transparent,
+          child: GestureDetector(
+            onTap: _dismiss,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: dark ? const Color(0xFF1B1F26) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: c.withOpacity(0.4), width: 1.5),
+                boxShadow: [
+                  BoxShadow(color: c.withOpacity(0.25), blurRadius: 20, offset: const Offset(0, 6)),
+                  BoxShadow(color: Colors.black.withOpacity(dark ? 0.4 : 0.1), blurRadius: 12, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: Row(children: [
+                Container(
+                  width: 46, height: 46,
+                  decoration: BoxDecoration(color: c.withOpacity(0.15), shape: BoxShape.circle),
+                  child: Icon(widget.icon, color: c, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(
+                    widget.notification.title ?? 'Notification',
+                    style: TextStyle(
+                      color: dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E),
+                      fontWeight: FontWeight.w700, fontSize: 14),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 3),
+                  Text(
+                    widget.notification.message ?? '',
+                    style: TextStyle(color: dark ? const Color(0xFF98A1AE) : const Color(0xFF6B7280), fontSize: 12),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                ])),
+                const SizedBox(width: 8),
+                Icon(Icons.close_rounded, color: dark ? const Color(0xFF98A1AE) : const Color(0xFF9CA3AF), size: 18),
+              ]),
+            ),
           ),
         ),
       ),
-      initialRoute: AppRoutes.splash,
-      onGenerateRoute: AppRoutes.generateRoute,
     );
   }
 }

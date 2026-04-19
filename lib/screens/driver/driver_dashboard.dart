@@ -32,7 +32,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
   Future<void> _acceptOrder(OrderModel order) async {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AppAuthProvider>(context, listen: false);
 
     final success = await orderProvider.acceptOrder(
       orderId: order.id,

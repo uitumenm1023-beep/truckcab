@@ -25,8 +25,6 @@ class ChatProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // ─── Chat Requests ──────────────────────────────────────────────────────
-
   void startSellerChatRequestsListener(String sellerId) {
     _chatRequestsSubscription?.cancel();
     _isLoading = true;
@@ -51,6 +49,86 @@ class ChatProvider extends ChangeNotifier {
   void stopSellerChatRequestsListener() {
     _chatRequestsSubscription?.cancel();
     _chatRequestsSubscription = null;
+  }
+
+  void startChatsListener(String userId) {
+    _chatsSubscription?.cancel();
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    _chatsSubscription = _chatService.getUserChats(userId).listen(
+      (snapshot) {
+        _chats = snapshot.docs;
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (_) {
+        _errorMessage = 'Failed to load chats.';
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
+  }
+
+  void stopChatsListener() {
+    _chatsSubscription?.cancel();
+    _chatsSubscription = null;
+  }
+
+  void startMessagesListener(String chatId) {
+    _messagesSubscription?.cancel();
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    _messagesSubscription = _chatService.getMessages(chatId).listen(
+      (snapshot) {
+        _messages = snapshot.docs;
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (_) {
+        _errorMessage = 'Failed to load messages.';
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
+  }
+
+  void stopMessagesListener() {
+    _messagesSubscription?.cancel();
+    _messagesSubscription = null;
+  }
+
+  Future<bool> sendChatRequest({
+    required String orderId,
+    required String sellerId,
+    required String driverId,
+    required String orderDescription,
+    required String pickupLocation,
+    required String dropoffLocation,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _chatService.sendChatRequest(
+        orderId: orderId,
+        sellerId: sellerId,
+        driverId: driverId,
+        orderDescription: orderDescription,
+        pickupLocation: pickupLocation,
+        dropoffLocation: dropoffLocation,
+      );
+      return true;
+    } catch (_) {
+      _errorMessage = 'Failed to send chat request.';
+      notifyListeners();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<bool> acceptChatRequest({
@@ -113,66 +191,6 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Chats ──────────────────────────────────────────────────────────────
-
-  // FIX: startChatsListener is called from driver home initState so chats
-  // appear automatically without the driver having to navigate to the tab.
-  void startChatsListener(String userId) {
-    _chatsSubscription?.cancel();
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    _chatsSubscription = _chatService.getUserChats(userId).listen(
-      (snapshot) {
-        _chats = snapshot.docs;
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (_) {
-        _errorMessage = 'Failed to load chats.';
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
-  }
-
-  void stopChatsListener() {
-    _chatsSubscription?.cancel();
-    _chatsSubscription = null;
-  }
-
-  // ─── Messages ───────────────────────────────────────────────────────────
-
-  // FIX: Messages are loaded fresh every time ChatScreen opens.
-  // Because they live in Firestore subcollections they persist indefinitely.
-  // The stream keeps them live while the screen is open.
-  void startMessagesListener(String chatId) {
-    _messagesSubscription?.cancel();
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    _messagesSubscription = _chatService.getMessages(chatId).listen(
-      (snapshot) {
-        _messages = snapshot.docs;
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (_) {
-        _errorMessage = 'Failed to load messages.';
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
-  }
-
-  void stopMessagesListener() {
-    _messagesSubscription?.cancel();
-    _messagesSubscription = null;
-    _messages = [];
-  }
-
   Future<bool> sendMessage({
     required String chatId,
     required String senderId,
@@ -206,23 +224,6 @@ class ChatProvider extends ChangeNotifier {
     } catch (_) {
       _errorMessage = 'Failed to mark messages as read.';
       notifyListeners();
-    }
-  }
-
-  // FIX: deleteChat removes both the Firestore doc and all subcollection
-  // messages, then removes it from the local _chats list.
-  Future<bool> deleteChat(String chatId) async {
-    _clearError();
-
-    try {
-      await _chatService.deleteChat(chatId);
-      _chats.removeWhere((doc) => doc.id == chatId);
-      notifyListeners();
-      return true;
-    } catch (_) {
-      _errorMessage = 'Failed to delete chat.';
-      notifyListeners();
-      return false;
     }
   }
 

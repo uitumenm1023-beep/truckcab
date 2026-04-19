@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 
 import '../core/constants/app_status.dart';
 import '../models/order_model.dart';
+import '../services/chat_service.dart';
 import '../services/order_service.dart';
 
 class OrderProvider extends ChangeNotifier {
   final OrderService _orderService = OrderService();
+  final ChatService _chatService = ChatService();
 
   List<OrderModel> _availableOrders = [];
   List<OrderModel> _sellerOrders = [];
@@ -151,6 +153,11 @@ class OrderProvider extends ChangeNotifier {
     required String dropoffLocation,
     required String description,
     required double price,
+    double? pickupLat,
+    double? pickupLng,
+    double? dropoffLat,
+    double? dropoffLng,
+    List<String>? imageUrls,
   }) async {
     _setLoading(true);
     _clearError();
@@ -162,6 +169,11 @@ class OrderProvider extends ChangeNotifier {
         dropoffLocation: dropoffLocation,
         description: description,
         price: price,
+        pickupLat: pickupLat,
+        pickupLng: pickupLng,
+        dropoffLat: dropoffLat,
+        dropoffLng: dropoffLng,
+        imageUrls: imageUrls,
       );
       return true;
     } catch (_) {
@@ -173,9 +185,6 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
-  // FIX: was calling _chatService.sendChatRequest which bypassed
-  // the notification logic entirely. Now calls _orderService.acceptOrder
-  // which sends the chat request AND creates the seller notification.
   Future<bool> acceptOrder({
     required String orderId,
     required String driverId,
@@ -188,8 +197,9 @@ class OrderProvider extends ChangeNotifier {
         (order) => order.id == orderId,
       );
 
-      await _orderService.acceptOrder(
+      await _chatService.sendChatRequest(
         orderId: selectedOrder.id,
+        sellerId: selectedOrder.sellerId,
         driverId: driverId,
         orderDescription: selectedOrder.description,
         pickupLocation: selectedOrder.pickupLocation,

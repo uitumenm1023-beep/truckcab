@@ -15,8 +15,8 @@ plugins {
 
 android {
     namespace = "com.NEPTUNE.truckcab"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 36
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -30,9 +30,10 @@ android {
     defaultConfig {
         applicationId = "com.NEPTUNE.truckcab"
         minSdk = flutter.minSdkVersion
-        targetSdk = 34
-        versionCode = 1
+        targetSdk = 35
+        versionCode = 4
         versionName = "1.0.0"
+        multiDexEnabled = true
     }
 
     signingConfigs {
@@ -49,6 +50,10 @@ android {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

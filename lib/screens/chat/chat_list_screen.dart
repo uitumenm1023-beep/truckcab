@@ -6,247 +6,129 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../routes/app_routes.dart';
 
+bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E);
+Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
+Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF252A33) : const Color(0xFFF0F1F8);
+Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF1B1F26) : const Color(0xFFFFFFFF);
+Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF101216) : const Color(0xFFF2F3F8);
+Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14FFFFFF) : const Color(0xFFE5E7EB);
+
+const Color _purple = Color(0xFF7B6CF6);
+const Color _green  = Color(0xFF22C55E);
+
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
-
-  @override
-  State<ChatListScreen> createState() => _ChatListScreenState();
+  @override State<ChatListScreen> createState() => _ChatListScreenState();
 }
 
 class _ChatListScreenState extends State<ChatListScreen> {
-  // Track which chatIds are being deleted so we can hide them instantly
-  // while Firestore propagates — prevents the Dismissible crash entirely
-  // because we no longer use Dismissible at all.
-  final Set<String> _deletingIds = {};
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final authProvider = context.read<AuthProvider>();
-      final chatProvider = context.read<ChatProvider>();
-      final userId = authProvider.currentUserId;
-      // startChatsListener is idempotent — if SellerHomeScreen or
-      // DriverHomeScreen already started it for this user the call is
-      // a no-op. It acts as a safe fallback when this screen is pushed
-      // directly (e.g. from a notification tap).
-      if (userId != null && userId.isNotEmpty) {
-        chatProvider.startChatsListener(userId);
-      }
+      final uid = context.read<AppAuthProvider>().currentUserId;
+      if (uid != null && uid.isNotEmpty) context.read<ChatProvider>().startChatsListener(uid);
     });
   }
 
   @override
   void dispose() {
-    // Do NOT stop the chats listener here — DriverHomeScreen owns it.
+    try { context.read<ChatProvider>().stopChatsListener(); } catch (_) {}
     super.dispose();
-  }
-
-  Future<void> _confirmDeleteChat(
-    BuildContext context,
-    String chatId,
-    String title,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Chat'),
-        content: Text('Delete "$title"?\nAll messages will be permanently removed.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      // Hide immediately in UI before Firestore responds
-      setState(() => _deletingIds.add(chatId));
-
-      final chatProvider = context.read<ChatProvider>();
-      final success = await chatProvider.deleteChat(chatId);
-
-      if (mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Chat deleted')),
-          );
-        } else {
-          // Delete failed — show item again
-          setState(() => _deletingIds.remove(chatId));
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to delete chat')),
-          );
-        }
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final chatProvider = context.watch<ChatProvider>();
-    final authProvider = context.watch<AuthProvider>();
-    final currentUserId = authProvider.currentUserId ?? '';
-
-    // Filter out any chats currently being deleted so they vanish instantly
-    final visibleChats = chatProvider.chats
-        .where((doc) => !_deletingIds.contains(doc.id))
-        .toList();
+    final chat    = context.watch<ChatProvider>();
+    final uid     = context.watch<AppAuthProvider>().currentUserId ?? '';
 
     return Scaffold(
+      backgroundColor: _bg(context),
       appBar: AppBar(
-        title: const Text('Chats'),
+        backgroundColor: _card(context),
+        elevation: 0,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(margin: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: _soft(context), borderRadius: BorderRadius.circular(12)),
+            child: Icon(Icons.arrow_back_ios_new_rounded, color: _textPri(context), size: 16)),
+        ),
+        title: Text('Chats', style: TextStyle(color: _textPri(context), fontSize: 20, fontWeight: FontWeight.w700)),
       ),
-      body: chatProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : visibleChats.isEmpty
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.chat_bubble_outline, size: 60, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text('No chats yet', style: TextStyle(color: Colors.grey)),
-                      SizedBox(height: 8),
-                      Text(
-                        'Long-press any chat to delete it.',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                )
+      body: chat.isLoading
+          ? const Center(child: CircularProgressIndicator(color: _purple))
+          : chat.chats.isEmpty
+              ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.chat_bubble_outline, color: _textSec(context), size: 48),
+                  const SizedBox(height: 12),
+                  Text('No chats yet', style: TextStyle(color: _textSec(context), fontSize: 15)),
+                ]))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: visibleChats.length,
-                  itemBuilder: (context, index) {
-                    final doc = visibleChats[index];
-                    final data = doc.data() as Map<String, dynamic>;
-
-                    final sellerId = (data['sellerId'] ?? '').toString();
-                    final driverId = (data['driverId'] ?? '').toString();
-                    final otherUserId =
-                        currentUserId == sellerId ? driverId : sellerId;
-
-                    final orderDescription =
-                        (data['orderDescription'] ?? 'Chat').toString();
-                    final lastMessage = (data['lastMessage'] ?? '').toString();
-
-                    return StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(otherUserId)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        final userData = snapshot.data?.data();
-                        final userMap = userData is Map<String, dynamic>
-                            ? userData
-                            : <String, dynamic>{};
-
-                        final otherEmail =
-                            (userMap['email'] ?? 'Unknown user').toString();
-                        final isOnline = userMap['isOnline'] == true;
-
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                AppRoutes.chatScreen,
-                                arguments: ChatScreenArgs(
-                                  chatId: doc.id,
-                                  title: orderDescription,
-                                ),
-                              );
-                            },
-                            // Long press to delete — no Dismissible needed.
-                            // Dismissible + Firestore realtime streams causes
-                            // a fatal crash because the stream re-emits the
-                            // deleted item before Firestore confirms deletion.
-                            onLongPress: () => _confirmDeleteChat(
-                              context,
-                              doc.id,
-                              orderDescription,
-                            ),
-                            leading: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                const CircleAvatar(
-                                  radius: 24,
-                                  child: Icon(Icons.person),
-                                ),
-                                Positioned(
-                                  right: -1,
-                                  bottom: -1,
-                                  child: Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: isOnline ? Colors.green : Colors.grey,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: const Color(0xFF101216),
-                                        width: 2,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            title: Text(
-                              orderDescription,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 4),
-                                Text(
-                                  otherEmail,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  lastMessage.isEmpty ? 'No messages yet' : lastMessage,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
-                              ],
-                            ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  isOnline ? Icons.circle : Icons.access_time_outlined,
-                                  size: isOnline ? 12 : 18,
-                                  color: isOnline ? Colors.green : Colors.grey,
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'hold to\ndelete',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 9, color: Colors.grey),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                  itemCount: chat.chats.length,
+                  itemBuilder: (ctx, i) {
+                    final doc    = chat.chats[i];
+                    final data   = doc.data() as Map<String, dynamic>;
+                    final seller = (data['sellerId'] ?? '').toString();
+                    final driver = (data['driverId'] ?? '').toString();
+                    final other  = uid == seller ? driver : seller;
+                    final desc   = (data['orderDescription'] ?? 'Chat').toString();
+                    final last   = (data['lastMessage'] ?? '').toString();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _ChatTile(chatId: doc.id, otherUserId: other, description: desc, lastMessage: last),
                     );
                   },
                 ),
+    );
+  }
+}
+
+class _ChatTile extends StatelessWidget {
+  final String chatId, otherUserId, description, lastMessage;
+  const _ChatTile({required this.chatId, required this.otherUserId, required this.description, required this.lastMessage});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(otherUserId).snapshots(),
+      builder: (ctx, snap) {
+        final ud   = snap.data?.data();
+        final um   = ud is Map<String, dynamic> ? ud : <String, dynamic>{};
+        final name = (um['name'] ?? um['email'] ?? 'User').toString();
+        final isOnline = um['isOnline'] == true;
+        return GestureDetector(
+          onTap: () => Navigator.pushNamed(context, AppRoutes.chatScreen,
+            arguments: ChatScreenArgs(chatId: chatId, title: description)),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: _card(context), borderRadius: BorderRadius.circular(18), border: Border.all(color: _border(context))),
+            child: Row(children: [
+              Stack(clipBehavior: Clip.none, children: [
+                Container(width: 50, height: 50, decoration: BoxDecoration(color: _soft(context), shape: BoxShape.circle),
+                  child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                    style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 20)))),
+                Positioned(right: 0, bottom: 0,
+                  child: Container(width: 13, height: 13,
+                    decoration: BoxDecoration(color: isOnline ? _green : const Color(0xFF9CA3AF),
+                      shape: BoxShape.circle, border: Border.all(color: _card(context), width: 2)))),
+              ]),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(description, style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 14),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 3),
+                Text(lastMessage.isEmpty ? 'No messages yet' : lastMessage,
+                  style: TextStyle(color: _textSec(context), fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ])),
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right, color: _purple, size: 20),
+            ]),
+          ),
+        );
+      },
     );
   }
 }

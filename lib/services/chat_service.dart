@@ -10,6 +10,41 @@ class ChatService {
 
   // ─── Chat Requests ────────────────────────────────────────────────────────
 
+  Future<void> sendChatRequest({
+    required String orderId,
+    required String sellerId,
+    required String driverId,
+    required String orderDescription,
+    required String pickupLocation,
+    required String dropoffLocation,
+  }) async {
+    final requestId = '${orderId}_${sellerId}_$driverId';
+    await _firestore.collection('chat_requests').doc(requestId).set({
+      'orderId': orderId,
+      'sellerId': sellerId,
+      'driverId': driverId,
+      'orderDescription': orderDescription,
+      'pickupLocation': pickupLocation,
+      'dropoffLocation': dropoffLocation,
+      'status': 'pending',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    try {
+      await _notificationService.createNotification(
+        userId: sellerId,
+        orderId: orderId,
+        chatId: requestId,
+        title: 'New Delivery Request',
+        message: 'A driver has requested to deliver your order.',
+        type: 'chat_request',
+      );
+    } catch (e) {
+      debugPrint('sendChatRequest notification error: $e');
+    }
+  }
+
   Stream<QuerySnapshot> getChatRequestsForSeller(String sellerId) {
     return _firestore
         .collection('chat_requests')

@@ -5,305 +5,281 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 
+bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E);
+Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
+Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF252A33) : const Color(0xFFF0F1F8);
+Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF1B1F26) : const Color(0xFFFFFFFF);
+Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF101216) : const Color(0xFFF2F3F8);
+Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14FFFFFF) : const Color(0xFFE5E7EB);
+
+const Color _purple = Color(0xFF7B6CF6);
+const Color _orange = Color(0xFFFF5A1F);
+const Color _green  = Color(0xFF22C55E);
+
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String title;
 
-  const ChatScreen({
-    super.key,
-    required this.chatId,
-    required this.title,
-  });
+  const ChatScreen({super.key, required this.chatId, required this.title});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final TextEditingController _messageController = TextEditingController();
+  final TextEditingController _ctrl = TextEditingController();
   bool _isSending = false;
 
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-
-      final chatProvider = context.read<ChatProvider>();
-      final authProvider = context.read<AuthProvider>();
-      final currentUserId = authProvider.currentUserId;
-
-      chatProvider.startMessagesListener(widget.chatId);
-
-      if (currentUserId != null && currentUserId.isNotEmpty) {
-        await chatProvider.markMessagesAsRead(
-          chatId: widget.chatId,
-          currentUserId: currentUserId,
-        );
+      final chat = context.read<ChatProvider>();
+      final auth = context.read<AppAuthProvider>();
+      chat.startMessagesListener(widget.chatId);
+      final uid = auth.currentUserId;
+      if (uid != null && uid.isNotEmpty) {
+        await chat.markMessagesAsRead(chatId: widget.chatId, currentUserId: uid);
       }
     });
   }
 
   @override
   void dispose() {
-    _messageController.dispose();
-    try {
-      context.read<ChatProvider>().stopMessagesListener();
-    } catch (_) {}
+    _ctrl.dispose();
+    try { context.read<ChatProvider>().stopMessagesListener(); } catch (_) {}
     super.dispose();
   }
 
-  Future<void> _sendMessage() async {
-    final text = _messageController.text.trim();
+  Future<void> _send() async {
+    final text = _ctrl.text.trim();
     if (text.isEmpty || _isSending) return;
+    final uid = context.read<AppAuthProvider>().currentUserId;
+    if (uid == null || uid.isEmpty) return;
 
-    final authProvider = context.read<AuthProvider>();
-    final chatProvider = context.read<ChatProvider>();
-    final currentUserId = authProvider.currentUserId;
-
-    if (currentUserId == null || currentUserId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not found')),
-      );
-      return;
-    }
-
-    setState(() {
-      _isSending = true;
-    });
-
-    final success = await chatProvider.sendMessage(
-      chatId: widget.chatId,
-      senderId: currentUserId,
-      text: text,
+    setState(() => _isSending = true);
+    final ok = await context.read<ChatProvider>().sendMessage(
+      chatId: widget.chatId, senderId: uid, text: text,
     );
-
     if (!mounted) return;
-
-    setState(() {
-      _isSending = false;
-    });
-
-    if (success) {
-      _messageController.clear();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(chatProvider.errorMessage ?? 'Failed to send message'),
-        ),
-      );
-    }
+    setState(() => _isSending = false);
+    if (ok) _ctrl.clear();
   }
 
-  String _formatTime(DateTime? time) {
-    if (time == null) return '';
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+  Future<void> _finalApprove(Map<String, dynamic> requestData) async {
+    final chat = context.read<ChatProvider>();
+    final ok = await chat.confirmDriverForDelivery(
+      requestId: widget.chatId, requestData: requestData,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(ok ? 'Driver approved for delivery!' : (chat.errorMessage ?? 'Failed')),
+      backgroundColor: ok ? _green : Colors.redAccent,
+    ));
+  }
+
+  String _formatTime(DateTime? t) {
+    if (t == null) return '';
+    return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final chatProvider = context.watch<ChatProvider>();
-    final authProvider = context.watch<AuthProvider>();
-    final currentUserId = authProvider.currentUserId ?? '';
+    final chat   = context.watch<ChatProvider>();
+    final auth   = context.watch<AppAuthProvider>();
+    final uid    = auth.currentUserId ?? '';
+    final dark   = _isDark(context);
 
     return Scaffold(
+      backgroundColor: _bg(context),
       appBar: AppBar(
-        title: Text(widget.title),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(26),
-          child: StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('chats')
-                .doc(widget.chatId)
-                .snapshots(),
-            builder: (context, chatSnapshot) {
-              final chatData = chatSnapshot.data?.data();
-              final chatMap = chatData is Map<String, dynamic>
-                  ? chatData
-                  : <String, dynamic>{};
-
-              final sellerId = (chatMap['sellerId'] ?? '').toString();
-              final driverId = (chatMap['driverId'] ?? '').toString();
-              final otherUserId =
-                  currentUserId == sellerId ? driverId : sellerId;
-
-              if (otherUserId.isEmpty) {
-                return const SizedBox(height: 26);
-              }
-
-              return StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(otherUserId)
-                    .snapshots(),
-                builder: (context, userSnapshot) {
-                  final userData = userSnapshot.data?.data();
-                  final userMap = userData is Map<String, dynamic>
-                      ? userData
-                      : <String, dynamic>{};
-
-                  final otherEmail =
-                      (userMap['email'] ?? 'Unknown user').toString();
-                  final isOnline = userMap['isOnline'] == true;
-                  final lastSeenTs = userMap['lastSeen'] as Timestamp?;
-                  final lastSeen = lastSeenTs?.toDate();
-
-                  String subtitle = otherEmail;
-                  if (isOnline) {
-                    subtitle = '$otherEmail • Active now';
-                  } else if (lastSeen != null) {
-                    final hour = lastSeen.hour.toString().padLeft(2, '0');
-                    final minute = lastSeen.minute.toString().padLeft(2, '0');
-                    subtitle = '$otherEmail • Last seen $hour:$minute';
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
+        backgroundColor: _card(context),
+        elevation: 0,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            margin: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: _soft(context), borderRadius: BorderRadius.circular(12)),
+            child: Icon(Icons.arrow_back_ios_new_rounded, color: _textPri(context), size: 16),
           ),
         ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: chatProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : chatProvider.messages.isEmpty
-                    ? const Center(
-                        child: Text('No messages yet'),
-                      )
-                    : ListView.builder(
-                        reverse: true,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: chatProvider.messages.length,
-                        itemBuilder: (context, index) {
-                          final doc = chatProvider.messages[index];
-                          final data = doc.data() as Map<String, dynamic>;
-
-                          final senderId = (data['senderId'] ?? '').toString();
-                          final text = (data['text'] ?? '').toString();
-                          final isMine = senderId == currentUserId;
-                          final timestamp = data['createdAt'] as Timestamp?;
-                          final createdAt = timestamp?.toDate();
-
-                          return Align(
-                            alignment: isMine
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              constraints: BoxConstraints(
-                                maxWidth:
-                                    MediaQuery.of(context).size.width * 0.75,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isMine
-                                    ? const Color(0xFFFF5A1F)
-                                    : const Color(0xFF252A33),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: isMine
-                                    ? CrossAxisAlignment.end
-                                    : CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    text,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _formatTime(createdAt),
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      minLines: 1,
-                      maxLines: 5,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
-                      decoration: InputDecoration(
-                        hintText: 'Type a message...',
-                        filled: true,
-                        fillColor: const Color(0xFF252A33),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(18),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                  ),
+        title: StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance.collection('chats').doc(widget.chatId).snapshots(),
+          builder: (ctx, chatSnap) {
+            final chatData = chatSnap.data?.data();
+            final chatMap  = chatData is Map<String, dynamic> ? chatData : <String, dynamic>{};
+            final sellerId = (chatMap['sellerId'] ?? '').toString();
+            final driverId = (chatMap['driverId'] ?? '').toString();
+            final otherId  = uid == sellerId ? driverId : sellerId;
+            if (otherId.isEmpty) return Text(widget.title, style: TextStyle(color: _textPri(context), fontSize: 16, fontWeight: FontWeight.w700));
+            return StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance.collection('users').doc(otherId).snapshots(),
+              builder: (ctx2, userSnap) {
+                final ud = userSnap.data?.data();
+                final um = ud is Map<String, dynamic> ? ud : <String, dynamic>{};
+                final name = (um['name'] ?? um['email'] ?? 'User').toString();
+                final isOnline = um['isOnline'] == true;
+                return Row(children: [
+                  Container(width: 36, height: 36, decoration: BoxDecoration(color: _purple.withOpacity(0.15), shape: BoxShape.circle),
+                    child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                      style: const TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 14)))),
                   const SizedBox(width: 10),
-                  SizedBox(
-                    height: 50,
-                    width: 50,
-                    child: ElevatedButton(
-                      onPressed: _isSending ? null : _sendMessage,
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: _isSending
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                color: Colors.white,
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(name, style: TextStyle(color: _textPri(context), fontSize: 14, fontWeight: FontWeight.w700)),
+                    Text(isOnline ? 'Online' : 'Offline', style: TextStyle(color: isOnline ? _green : _textSec(context), fontSize: 11)),
+                  ]),
+                ]);
+              },
+            );
+          },
+        ),
+      ),
+      body: Column(children: [
+        // Seller-only: accept delivery button
+        StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance.collection('chats').doc(widget.chatId).snapshots(),
+          builder: (ctx, cs) {
+            final cd  = cs.data?.data();
+            final cm  = cd is Map<String, dynamic> ? cd : <String, dynamic>{};
+            final isSeller = uid == (cm['sellerId'] ?? '').toString();
+            if (!isSeller) return const SizedBox.shrink();
+            return StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance.collection('chat_requests').doc(widget.chatId).snapshots(),
+              builder: (ctx2, rs) {
+                final rd = rs.data?.data();
+                final rm = rd is Map<String, dynamic> ? rd : <String, dynamic>{};
+                final status = (rm['status'] ?? '').toString();
+                if (status == 'approved' || status == 'rejected') return const SizedBox.shrink();
+                return Container(
+                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: dark ? const Color(0xFF1C1630) : const Color(0xFFEDE9FE),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: _purple.withOpacity(0.25)),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.verified_outlined, color: _purple, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text('Ready to approve this driver for delivery?',
+                      style: TextStyle(color: _textPri(context), fontSize: 13))),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: () => _finalApprove(rm),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(color: _purple, borderRadius: BorderRadius.circular(12)),
+                        child: const Text('Approve', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12))),
+                    ),
+                  ]),
+                );
+              },
+            );
+          },
+        ),
+        // Messages
+        Expanded(
+          child: chat.isLoading
+              ? const Center(child: CircularProgressIndicator(color: _purple))
+              : chat.messages.isEmpty
+                  ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.chat_bubble_outline, color: _textSec(context), size: 40),
+                      const SizedBox(height: 10),
+                      Text('No messages yet', style: TextStyle(color: _textSec(context), fontSize: 14)),
+                    ]))
+                  : ListView.builder(
+                      reverse: true,
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      itemCount: chat.messages.length,
+                      itemBuilder: (ctx, i) {
+                        final doc    = chat.messages[i];
+                        final data   = doc.data() as Map<String, dynamic>;
+                        final sender = (data['senderId'] ?? '').toString();
+                        final text   = (data['text'] ?? '').toString();
+                        final isMine = sender == uid;
+                        final ts     = data['createdAt'] as Timestamp?;
+                        final time   = _formatTime(ts?.toDate());
+                        return Align(
+                          alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
+                            decoration: BoxDecoration(
+                              color: isMine ? _purple : _card(context),
+                              borderRadius: BorderRadius.only(
+                                topLeft: const Radius.circular(18),
+                                topRight: const Radius.circular(18),
+                                bottomLeft: Radius.circular(isMine ? 18 : 4),
+                                bottomRight: Radius.circular(isMine ? 4 : 18),
                               ),
-                            )
-                          : const Icon(Icons.send_rounded),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(dark ? 0.2 : 0.06), blurRadius: 8, offset: const Offset(0, 2))],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                              children: [
+                                Text(text, style: TextStyle(color: isMine ? Colors.white : _textPri(context), fontSize: 14, height: 1.4)),
+                                const SizedBox(height: 4),
+                                Text(time, style: TextStyle(color: isMine ? Colors.white60 : _textSec(context), fontSize: 10)),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+        ),
+        // Input bar
+        SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            decoration: BoxDecoration(
+              color: _card(context),
+              border: Border(top: BorderSide(color: _border(context))),
+            ),
+            child: Row(children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(color: _soft(context), borderRadius: BorderRadius.circular(20)),
+                  child: TextField(
+                    controller: _ctrl,
+                    minLines: 1,
+                    maxLines: 4,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _send(),
+                    style: TextStyle(color: _textPri(context), fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Type a message...',
+                      hintStyle: TextStyle(color: _textSec(context), fontSize: 14),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: _isSending ? null : _send,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  width: 48, height: 48,
+                  decoration: BoxDecoration(
+                    color: _isSending ? _purple.withOpacity(0.5) : _purple,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: _purple.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))],
+                  ),
+                  child: _isSending
+                      ? const Padding(padding: EdgeInsets.all(14),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                ),
+              ),
+            ]),
           ),
-        ],
-      ),
+        ),
+      ]),
     );
   }
 }

@@ -7,532 +7,273 @@ import '../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 
+// ── Palette ──────────────────────────────────────────────────────────────────
+const Color _bg      = Color(0xFF101216);
+const Color _bgTop   = Color(0xFF171A20);
+const Color _card    = Color(0xFF1B1F26);
+const Color _soft    = Color(0xFF252A33);
+const Color _accent  = Color(0xFFFF5A1F);
+const Color _textPri = Color(0xFFF5F7FA);
+const Color _textSec = Color(0xFF98A1AE);
+const Color _border  = Color(0x14FFFFFF);
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  @override State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  static const Color _bgTop = Color(0xFF171A20);
-  static const Color _bgBottom = Color(0xFF101216);
-  static const Color _card = Color(0xFF1B1F26);
-  static const Color _softCard = Color(0xFF252A33);
-  static const Color _accent = Color(0xFFFF5A1F);
-  static const Color _textPrimary = Color(0xFFF5F7FA);
-  static const Color _textSecondary = Color(0xFF98A1AE);
+  final _emailCtrl = TextEditingController();
+  final _passCtrl  = TextEditingController();
+  final _formKey   = GlobalKey<FormState>();
 
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  bool   _obscurePass  = true;
+  bool   _isSubmitting = false;
+  double _drag         = 0.0;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  bool _obscurePassword = true;
-  double _dragProgress = 0.0;
-  bool _isSubmitting = false;
+  final FirebaseFirestore _fs = FirebaseFirestore.instance;
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _emailCtrl.dispose(); _passCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _handleSliderComplete() async {
+  // ── Email login ────────────────────────────────────────────────────────────
+  Future<void> _loginEmail() async {
     if (_isSubmitting) return;
+    if (!_formKey.currentState!.validate()) { _resetSlider(); return; }
+    setState(() => _isSubmitting = true);
 
-    if (!_formKey.currentState!.validate()) {
-      _resetSlider();
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-    });
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    final success = await authProvider.login(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-    );
-
+    final auth = context.read<AppAuthProvider>();
+    final ok   = await auth.login(
+      email: _emailCtrl.text.trim(), password: _passCtrl.text.trim());
     if (!mounted) return;
+    setState(() => _isSubmitting = false);
 
-    if (!success) {
-      setState(() {
-        _isSubmitting = false;
-      });
-
+    if (ok) {
+      await _navigate(auth.currentUserId);
+    } else {
       _resetSlider();
-
-      final message = authProvider.errorMessage ?? 'Login failed';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-      return;
     }
+  }
 
-    final userId = authProvider.currentUserId;
-
-    if (userId == null || userId.isEmpty) {
-      setState(() {
-        _isSubmitting = false;
-      });
-
-      _resetSlider();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User session not found')),
-      );
-      return;
-    }
-
+  Future<void> _navigate(String? uid) async {
+    if (uid == null || uid.isEmpty) { _snack('User session not found'); return; }
     try {
-      final userDoc = await _firestore.collection('users').doc(userId).get();
-
+      final doc = await _fs.collection('users').doc(uid).get();
       if (!mounted) return;
-
-      if (!userDoc.exists) {
-        setState(() {
-          _isSubmitting = false;
-        });
-
-        _resetSlider();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User profile not found')),
-        );
-        return;
-      }
-
-      final data = userDoc.data();
-      final role = (data?['role'] ?? '').toString().trim().toLowerCase();
-
-      setState(() {
-        _isSubmitting = false;
-      });
-
+      final role = ((doc.data()?['role'] ?? '') as String).trim().toLowerCase();
       if (role == AppRoles.seller) {
         Navigator.pushReplacementNamed(context, AppRoutes.sellerHome);
       } else if (role == AppRoles.driver) {
         Navigator.pushReplacementNamed(context, AppRoutes.driverHome);
       } else {
-        _resetSlider();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid user role')),
-        );
+        _snack('Invalid user role');
       }
     } catch (_) {
-      if (!mounted) return;
-
-      setState(() {
-        _isSubmitting = false;
-      });
-
-      _resetSlider();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load user profile')),
-      );
+      _snack('Failed to load user profile');
     }
   }
 
-  void _resetSlider() {
-    if (!mounted) return;
-    setState(() {
-      _dragProgress = 0.0;
-    });
-  }
+  void _resetSlider() => setState(() => _drag = 0.0);
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final auth = context.watch<AppAuthProvider>();
 
     return Scaffold(
-      backgroundColor: _bgBottom,
+      backgroundColor: _bg,
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              _bgTop,
-              _bgBottom,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-            children: [
-              Row(
-                children: [
+          gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            colors: [_bgTop, _bg])),
+        child: SafeArea(child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+          children: [
+            // Top bar
+            Row(children: [
+              Container(width: 42, height: 42,
+                decoration: const BoxDecoration(color: _accent, shape: BoxShape.circle),
+                child: const Icon(Icons.local_shipping_outlined, color: Colors.white, size: 22)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.signup),
+                child: Container(width: 46, height: 46,
+                  decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: _border)),
+                  child: const Icon(Icons.person_add_alt_1_outlined, color: _textPri)),
+              ),
+            ]),
+            const SizedBox(height: 34),
+            const Text('Welcome\nBack', style: TextStyle(
+              color: _textPri, fontSize: 42, fontWeight: FontWeight.w300, height: 1.02)),
+            const SizedBox(height: 10),
+            const Text('Sign in to continue managing deliveries and orders.',
+              style: TextStyle(color: _textSec, fontSize: 14, height: 1.45)),
+            const SizedBox(height: 26),
+
+            // Form card
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: _card, borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: _border)),
+              child: Form(key: _formKey, child: Column(children: [
+                _Field(ctrl: _emailCtrl, label: 'Email', hint: 'Enter your email',
+                  icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress,
+                  validator: Validators.validateEmail),
+                const SizedBox(height: 14),
+                _Field(ctrl: _passCtrl, label: 'Password', hint: 'Enter your password',
+                  icon: Icons.lock_outline_rounded, obscure: _obscurePass,
+                  validator: Validators.validatePassword,
+                  suffix: IconButton(
+                    onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                    icon: Icon(_obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: _textSec))),
+
+                // Error banner
+                if (auth.errorMessage != null && auth.errorMessage!.isNotEmpty) ...[
+                  const SizedBox(height: 14),
                   Container(
-                    width: 42,
-                    height: 42,
-                    decoration: const BoxDecoration(
-                      color: _accent,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.local_shipping_outlined,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    width: 46,
-                    height: 46,
+                    width: double.infinity, padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: _card,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0x16FFFFFF)),
-                    ),
-                    child: IconButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, AppRoutes.signup);
-                      },
-                      icon: const Icon(
-                        Icons.person_add_alt_1_outlined,
-                        color: _textPrimary,
-                      ),
-                    ),
+                      color: const Color(0x22FF5A1F), borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0x44FF5A1F))),
+                    child: Row(children: [
+                      const Icon(Icons.warning_amber_rounded, color: _accent, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(auth.errorMessage!,
+                        style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4))),
+                    ]),
                   ),
                 ],
-              ),
-              const SizedBox(height: 34),
-              const Text(
-                'Welcome\nBack',
-                style: TextStyle(
-                  color: _textPrimary,
-                  fontSize: 42,
-                  fontWeight: FontWeight.w300,
-                  height: 1.02,
+
+                const SizedBox(height: 18),
+                _SlideButton(
+                  text: _isSubmitting || auth.isLoading ? 'Signing In…' : 'Slide to Sign In',
+                  progress: _drag, isLoading: _isSubmitting || auth.isLoading,
+                  onProgressChanged: (v) => setState(() => _drag = v),
+                  onCompleted: _loginEmail,
                 ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Sign in to continue managing deliveries and orders.',
-                style: TextStyle(
-                  color: _textSecondary,
-                  fontSize: 14,
-                  height: 1.45,
-                ),
-              ),
-              const SizedBox(height: 26),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: _card,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: const Color(0x14FFFFFF)),
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      _DarkInputField(
-                        controller: _emailController,
-                        label: 'Email',
-                        hint: 'Enter your email',
-                        keyboardType: TextInputType.emailAddress,
-                        validator: Validators.validateEmail,
-                        prefixIcon: Icons.email_outlined,
-                      ),
-                      const SizedBox(height: 14),
-                      _DarkInputField(
-                        controller: _passwordController,
-                        label: 'Password',
-                        hint: 'Enter your password',
-                        obscureText: _obscurePassword,
-                        validator: Validators.validatePassword,
-                        prefixIcon: Icons.lock_outline_rounded,
-                        suffix: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: _textSecondary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      if (authProvider.errorMessage != null &&
-                          authProvider.errorMessage!.isNotEmpty)
-                        Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0x33FF5A1F),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            authProvider.errorMessage!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      _SlideActionButton(
-                        text: _isSubmitting || authProvider.isLoading
-                            ? 'Signing In...'
-                            : 'Slide to Sign In',
-                        progress: _dragProgress,
-                        isLoading: _isSubmitting || authProvider.isLoading,
-                        onProgressChanged: (value) {
-                          if (_isSubmitting || authProvider.isLoading) return;
-                          setState(() {
-                            _dragProgress = value;
-                          });
-                        },
-                        onCompleted: _handleSliderComplete,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: _softCard,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      color: _accent,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'New here? Create an account and choose seller or driver.',
-                        style: TextStyle(
-                          color: _textSecondary,
-                          fontSize: 13,
-                          height: 1.35,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, AppRoutes.signup);
-                      },
-                      child: const Text(
-                        'Sign Up',
-                        style: TextStyle(
-                          color: _textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+              ])),
+            ),
+            const SizedBox(height: 18),
+
+            // Sign up hint
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: _soft, borderRadius: BorderRadius.circular(24)),
+              child: Row(children: [
+                const Icon(Icons.info_outline, color: _accent, size: 20),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('New here? Create an account and choose seller or driver.',
+                  style: TextStyle(color: _textSec, fontSize: 13, height: 1.35))),
+                TextButton(
+                  onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.signup),
+                  child: const Text('Sign Up',
+                    style: TextStyle(color: _textPri, fontWeight: FontWeight.w600))),
+              ]),
+            ),
+          ],
+        )),
       ),
     );
   }
 }
 
-class _DarkInputField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final bool obscureText;
+// ── Reusable field ────────────────────────────────────────────────────────────
+class _Field extends StatelessWidget {
+  final TextEditingController ctrl;
+  final String label, hint;
+  final IconData icon;
+  final bool obscure;
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
-  final IconData prefixIcon;
   final Widget? suffix;
-
-  const _DarkInputField({
-    required this.controller,
-    required this.label,
-    required this.hint,
-    this.obscureText = false,
-    this.keyboardType = TextInputType.text,
-    this.validator,
-    required this.prefixIcon,
-    this.suffix,
-  });
+  const _Field({required this.ctrl, required this.label, required this.hint,
+    required this.icon, this.obscure = false, this.keyboardType = TextInputType.text,
+    this.validator, this.suffix});
 
   @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      validator: validator,
-      style: const TextStyle(
-        color: Color(0xFFF5F7FA),
-        fontSize: 15,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        labelStyle: const TextStyle(color: Color(0xFF98A1AE)),
-        hintStyle: const TextStyle(color: Color(0xFF6F7784)),
-        prefixIcon: Icon(prefixIcon, color: const Color(0xFF98A1AE)),
-        suffixIcon: suffix,
-        filled: true,
-        fillColor: const Color(0xFF252A33),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 18,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: Color(0x12FFFFFF)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: Color(0x55FF5A1F)),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: Colors.redAccent),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: Colors.redAccent),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => TextFormField(
+    controller: ctrl, obscureText: obscure, keyboardType: keyboardType, validator: validator,
+    style: const TextStyle(color: _textPri, fontSize: 15),
+    decoration: InputDecoration(
+      labelText: label, hintText: hint,
+      labelStyle: const TextStyle(color: _textSec),
+      hintStyle: const TextStyle(color: Color(0xFF6F7784)),
+      prefixIcon: Icon(icon, color: _textSec), suffixIcon: suffix,
+      filled: true, fillColor: _soft,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: _border)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Color(0x55FF5A1F))),
+      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Colors.redAccent)),
+      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Colors.redAccent)),
+    ),
+  );
 }
 
-class _SlideActionButton extends StatefulWidget {
+// ── Slide button ──────────────────────────────────────────────────────────────
+class _SlideButton extends StatelessWidget {
   final String text;
   final double progress;
   final bool isLoading;
   final ValueChanged<double> onProgressChanged;
   final Future<void> Function() onCompleted;
+  const _SlideButton({required this.text, required this.progress, required this.isLoading,
+    required this.onProgressChanged, required this.onCompleted});
 
-  const _SlideActionButton({
-    required this.text,
-    required this.progress,
-    required this.isLoading,
-    required this.onProgressChanged,
-    required this.onCompleted,
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (ctx, c) {
+    const ks = 52.0;
+    final max = c.maxWidth - ks - 8;
+    final left = 4 + (max * progress);
+    return Container(height: 60,
+      decoration: BoxDecoration(color: _soft, borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: _border)),
+      child: Stack(children: [
+        // Track fill
+        Positioned(
+          left: 4, top: 4, bottom: 4, right: 4,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(26),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: AnimatedContainer(
+                duration: Duration.zero,
+                width: (left + ks / 2).clamp(0.0, c.maxWidth - 8),
+                color: _accent.withOpacity(0.08),
+              ),
+            ),
+          ),
+        ),
+        Center(child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 180), opacity: progress > 0.15 ? 0.0 : 1,
+          child: isLoading
+            ? const SizedBox(width: 22, height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
+            : Text(text, style: const TextStyle(color: _textPri, fontSize: 15, fontWeight: FontWeight.w600)))),
+        Positioned(
+          left: left, top: 4,
+          child: GestureDetector(
+            onHorizontalDragUpdate: isLoading ? null : (d) {
+              // Use delta.dx for smooth, 1:1 touch tracking
+              final newProgress = (progress + d.delta.dx / max).clamp(0.0, 1.0);
+              onProgressChanged(newProgress);
+            },
+            onHorizontalDragEnd: isLoading ? null : (_) async {
+              if (progress > 0.82) { onProgressChanged(1.0); await onCompleted(); }
+              else { onProgressChanged(0.0); }
+            },
+            child: Container(width: ks, height: ks,
+              decoration: const BoxDecoration(color: _accent, shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: Color(0x66FF5A1F), blurRadius: 16, offset: Offset(0, 6))]),
+              child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 24)),
+          )),
+      ]));
   });
-
-  @override
-  State<_SlideActionButton> createState() => _SlideActionButtonState();
-}
-
-class _SlideActionButtonState extends State<_SlideActionButton> {
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const knobSize = 52.0;
-        final maxDrag = constraints.maxWidth - knobSize - 8;
-        final knobLeft = 4 + (maxDrag * widget.progress);
-
-        return Container(
-          height: 60,
-          decoration: BoxDecoration(
-            color: const Color(0xFF252A33),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: const Color(0x14FFFFFF)),
-          ),
-          child: Stack(
-            children: [
-              Center(
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 180),
-                  opacity: widget.progress > 0.15 ? 0.2 : 1,
-                  child: widget.isLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          widget.text,
-                          style: const TextStyle(
-                            color: Color(0xFFF5F7FA),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
-              ),
-              AnimatedPositioned(
-                duration: widget.isLoading
-                    ? const Duration(milliseconds: 180)
-                    : Duration.zero,
-                left: knobLeft,
-                top: 4,
-                child: GestureDetector(
-                  onHorizontalDragUpdate: widget.isLoading
-                      ? null
-                      : (details) {
-                          final dx = details.localPosition.dx;
-                          final relative =
-                              ((knobLeft + dx) / (constraints.maxWidth)).clamp(0.0, 1.0);
-                          final progress = ((relative * constraints.maxWidth) / maxDrag)
-                              .clamp(0.0, 1.0);
-                          widget.onProgressChanged(progress);
-                        },
-                  onHorizontalDragEnd: widget.isLoading
-                      ? null
-                      : (_) async {
-                          if (widget.progress > 0.82) {
-                            widget.onProgressChanged(1.0);
-                            await widget.onCompleted();
-                          } else {
-                            widget.onProgressChanged(0.0);
-                          }
-                        },
-                  child: Container(
-                    width: knobSize,
-                    height: knobSize,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF5A1F),
-                      shape: BoxShape.circle,
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x66FF5A1F),
-                          blurRadius: 16,
-                          offset: Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }

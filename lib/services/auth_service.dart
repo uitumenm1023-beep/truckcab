@@ -5,171 +5,133 @@ class AuthService {
   AuthService({
     FirebaseAuth? firebaseAuth,
     FirebaseFirestore? firestore,
-  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+  })  : _auth = firebaseAuth ?? FirebaseAuth.instance,
         _firestore = firestore ?? FirebaseFirestore.instance;
 
-  final FirebaseAuth _firebaseAuth;
+  final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  static const String _users = 'users';
 
-  static const String _usersCollection = 'users';
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  User? get currentUser => _auth.currentUser;
+  bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
 
-  Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
+  Future<void> reloadUser() async => _auth.currentUser?.reload();
+  Future<void> sendVerificationEmail() async {
+    final u = _auth.currentUser;
+    if (u != null && !u.emailVerified) await u.sendEmailVerification();
+  }
 
-  User? get currentUser => _firebaseAuth.currentUser;
-
+  // ── Email sign-up ──────────────────────────────────────────────────────────
   Future<UserCredential> signUpWithEmail({
     required String email,
     required String password,
     required String role,
+    required String name,
+    required DateTime birthdate,
+    String vehicleType = '',
+    int yearsExperience = 0,
+    bool hasCrash = false,
+    int crashCount = 0,
   }) async {
-    final String cleanedEmail = email.trim().toLowerCase();
-    final String cleanedRole = role.trim().toLowerCase();
-
-    if (cleanedEmail.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'empty-email',
-        message: 'Email cannot be empty.',
-      );
-    }
-
-    if (password.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'empty-password',
-        message: 'Password cannot be empty.',
-      );
-    }
-
-    if (cleanedRole != 'seller' && cleanedRole != 'driver') {
-      throw FirebaseAuthException(
-        code: 'invalid-role',
-        message: 'Role must be either seller or driver.',
-      );
-    }
+    final e = email.trim().toLowerCase();
+    final r = role.trim().toLowerCase();
+    if (e.isEmpty) throw _ex('empty-email', 'Email cannot be empty.');
+    if (password.isEmpty) throw _ex('empty-password', 'Password cannot be empty.');
+    if (r != 'seller' && r != 'driver') throw _ex('invalid-role', 'Role must be seller or driver.');
 
     try {
-      final UserCredential userCredential =
-          await _firebaseAuth.createUserWithEmailAndPassword(
-        email: cleanedEmail,
-        password: password,
+      final cred = await _auth.createUserWithEmailAndPassword(email: e, password: password);
+      final user = cred.user;
+      if (user == null) throw _ex('user-creation-failed', 'User data missing after creation.');
+      if (name.trim().isNotEmpty) await user.updateDisplayName(name.trim());
+      await user.sendEmailVerification();
+      await _createDoc(
+        userId: user.uid, email: e, role: r, name: name, birthdate: birthdate,
+        vehicleType: vehicleType, yearsExperience: yearsExperience,
+        hasCrash: hasCrash, crashCount: crashCount,
       );
-
-      final User? user = userCredential.user;
-
-      if (user == null) {
-        throw FirebaseAuthException(
-          code: 'user-creation-failed',
-          message: 'User account was created, but user data is missing.',
-        );
-      }
-
-      await _createUserDocument(
-        userId: user.uid,
-        email: cleanedEmail,
-        role: cleanedRole,
-      );
-
-      return userCredential;
+      return cred;
     } on FirebaseAuthException {
       rethrow;
     } catch (_) {
-      throw FirebaseAuthException(
-        code: 'signup-failed',
-        message: 'Failed to sign up user. Please try again.',
-      );
+      throw _ex('signup-failed', 'Failed to sign up. Please try again.');
     }
   }
 
+  // ── Email login ────────────────────────────────────────────────────────────
   Future<UserCredential> loginWithEmail({
     required String email,
     required String password,
   }) async {
-    final String cleanedEmail = email.trim().toLowerCase();
-
-    if (cleanedEmail.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'empty-email',
-        message: 'Email cannot be empty.',
-      );
-    }
-
-    if (password.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'empty-password',
-        message: 'Password cannot be empty.',
-      );
-    }
-
+    final e = email.trim().toLowerCase();
+    if (e.isEmpty) throw _ex('empty-email', 'Email cannot be empty.');
+    if (password.isEmpty) throw _ex('empty-password', 'Password cannot be empty.');
     try {
-      final UserCredential userCredential =
-          await _firebaseAuth.signInWithEmailAndPassword(
-        email: cleanedEmail,
-        password: password,
-      );
-
-      return userCredential;
+      return await _auth.signInWithEmailAndPassword(email: e, password: password);
     } on FirebaseAuthException {
       rethrow;
     } catch (_) {
-      throw FirebaseAuthException(
-        code: 'login-failed',
-        message: 'Failed to log in. Please try again.',
-      );
+      throw _ex('login-failed', 'Failed to log in. Please try again.');
     }
   }
 
+  // ── Logout ─────────────────────────────────────────────────────────────────
   Future<void> logout() async {
     try {
-      await _firebaseAuth.signOut();
+      await _auth.signOut();
     } on FirebaseAuthException {
       rethrow;
     } catch (_) {
-      throw FirebaseAuthException(
-        code: 'logout-failed',
-        message: 'Failed to log out. Please try again.',
-      );
+      throw _ex('logout-failed', 'Failed to log out. Please try again.');
     }
   }
 
-  Future<void> _createUserDocument({
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  FirebaseAuthException _ex(String code, String message) =>
+      FirebaseAuthException(code: code, message: message);
+
+  Future<void> _createDoc({
     required String userId,
     required String email,
     required String role,
+    required String name,
+    required DateTime birthdate,
+    String vehicleType = '',
+    int yearsExperience = 0,
+    bool hasCrash = false,
+    int crashCount = 0,
   }) async {
     try {
-      await _firestore.collection(_usersCollection).doc(userId).set({
+      final data = <String, dynamic>{
         'userId': userId,
         'email': email,
         'role': role,
+        'name': name.trim(),
+        'birthdate': Timestamp.fromDate(birthdate),
         'isOnline': true,
         'lastSeen': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      };
+      if (role == 'driver') {
+        data['vehicleType'] = vehicleType;
+        data['yearsExperience'] = yearsExperience;
+        data['hasCrash'] = hasCrash;
+        data['crashCount'] = crashCount;
+      }
+      await _firestore.collection(_users).doc(userId).set(data);
     } on FirebaseException catch (e) {
-      await _deleteAuthUserIfPossible();
-
-      throw FirebaseAuthException(
-        code: 'firestore-user-create-failed',
-        message: e.message ?? 'Failed to create user profile in Firestore.',
-      );
+      await _tryDeleteAuthUser();
+      throw _ex('firestore-user-create-failed',
+          e.message ?? 'Failed to create user profile.');
     } catch (_) {
-      await _deleteAuthUserIfPossible();
-
-      throw FirebaseAuthException(
-        code: 'firestore-user-create-failed',
-        message: 'Failed to create user profile in Firestore.',
-      );
+      await _tryDeleteAuthUser();
+      throw _ex('firestore-user-create-failed', 'Failed to create user profile.');
     }
   }
 
-  Future<void> _deleteAuthUserIfPossible() async {
-    try {
-      final User? user = _firebaseAuth.currentUser;
-      if (user != null) {
-        await user.delete();
-      }
-    } catch (_) {
-      // ignored on purpose
-    }
+  Future<void> _tryDeleteAuthUser() async {
+    try { await _auth.currentUser?.delete(); } catch (_) {}
   }
 }

@@ -1,53 +1,83 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../providers/auth_provider.dart';
-import '../../routes/app_routes.dart';
 import '../../core/constants/app_roles.dart';
+import '../../routes/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  @override State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late final AnimationController _ac;
+  late final Animation<double>   _scale;
+  late final Animation<double>   _fade;
 
   @override
   void initState() {
     super.initState();
-    _checkAuthState();
+    _ac    = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _scale = CurvedAnimation(parent: _ac, curve: Curves.elasticOut);
+    _fade  = CurvedAnimation(parent: _ac, curve: Curves.easeIn);
+    _ac.forward();
+    _checkAuth();
   }
 
-  Future<void> _checkAuthState() async {
-    await Future.delayed(const Duration(seconds: 2));
+  @override
+  void dispose() { _ac.dispose(); super.dispose(); }
 
+  Future<void> _checkAuth() async {
+    await Future.delayed(const Duration(milliseconds: 1800));
     if (!mounted) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    // Reload user to get fresh emailVerified status
+    try {
+      await FirebaseAuth.instance.currentUser?.reload();
+    } catch (_) {}
 
-    if (!authProvider.isLoggedIn || authProvider.user == null) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.login);
       return;
     }
 
-    final userId = authProvider.user!.uid;
-
-    try {
-      final userDoc = await _firestore.collection('users').doc(userId).get();
-
+    // If email not verified, send back to login
+    if (!user.emailVerified) {
       if (!mounted) return;
+      Navigator.pushReplacementNamed(context, AppRoutes.login);
+      return;
+    }
 
-      if (!userDoc.exists) {
+    // Fetch role + subscription from Firestore
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (!mounted) return;
+      if (!doc.exists) {
         Navigator.pushReplacementNamed(context, AppRoutes.login);
         return;
       }
+      final data = doc.data() ?? {};
+      final role    = ((data['role'] ?? '') as String).trim().toLowerCase();
+      final isAdmin = data['isAdmin'] == true;
 
-      final data = userDoc.data();
-      final role = (data?['role'] ?? '').toString().trim().toLowerCase();
+      // Subscription check
+      bool subscribed = isAdmin; // admin always has access
+      if (!subscribed) {
+        final expTs = data['subscriptionExpiry'];
+        if (expTs is Timestamp) {
+          subscribed = expTs.toDate().isAfter(DateTime.now());
+        }
+      }
+
+      if (!subscribed) {
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, AppRoutes.subscription);
+        return;
+      }
 
       if (role == AppRoles.seller) {
         Navigator.pushReplacementNamed(context, AppRoutes.sellerHome);
@@ -64,14 +94,39 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(
+      backgroundColor: dark ? const Color(0xFF101216) : const Color(0xFFF2F3F8),
       body: Center(
-        child: Text(
-          'TruckCab',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-          ),
+        child: FadeTransition(
+          opacity: _fade,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ScaleTransition(
+              scale: _scale,
+              child: Container(
+                width: 100, height: 100,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    colors: [Color(0xFF7B6CF6), Color(0xFF5B4CD6)]),
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: const Color(0xFF7B6CF6).withOpacity(0.4), blurRadius: 32, offset: const Offset(0, 12))]),
+                child: const Icon(Icons.local_shipping_rounded, color: Colors.white, size: 46)),
+            ),
+            const SizedBox(height: 24),
+            Text('TruckCab',
+              style: TextStyle(
+                color: dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E),
+                fontSize: 34, fontWeight: FontWeight.w300, letterSpacing: 1.5)),
+            const SizedBox(height: 6),
+            Text('Delivering On Time',
+              style: TextStyle(color: dark ? const Color(0xFF98A1AE) : const Color(0xFF6B7280), fontSize: 14)),
+            const SizedBox(height: 48),
+            SizedBox(width: 28, height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: const Color(0xFF7B6CF6).withOpacity(0.6))),
+          ]),
         ),
       ),
     );

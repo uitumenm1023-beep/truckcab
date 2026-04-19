@@ -7,7 +7,9 @@ import '../screens/chat/chat_screen.dart';
 import '../screens/driver/driver_active_order.dart';
 import '../screens/driver/driver_dashboard.dart';
 import '../screens/driver/driver_home_screen.dart';
+import '../screens/admin/admin_screen.dart';
 import '../screens/notifications/notification_screen.dart';
+import '../screens/payment/subscription_screen.dart';
 import '../screens/seller/chat_requests_screen.dart';
 import '../screens/seller/create_order_screen.dart';
 import '../screens/seller/seller_home_screen.dart';
@@ -41,6 +43,8 @@ class AppRoutes {
 
   static const String chatList = '/chatList';
   static const String chatScreen = '/chatScreen';
+  static const String subscription = '/subscription';
+  static const String admin = '/admin';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -88,6 +92,12 @@ class AppRoutes {
             title: args.title,
           ),
         );
+
+      case subscription:
+        return MaterialPageRoute(builder: (_) => const SubscriptionScreen());
+
+      case admin:
+        return MaterialPageRoute(builder: (_) => const AdminScreen());
 
       default:
         return MaterialPageRoute(
