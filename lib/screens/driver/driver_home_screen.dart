@@ -14,12 +14,12 @@ import '../../routes/app_routes.dart';
 import 'navigation_screen.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
-Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
-Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
-Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFFF0F1F8);
-Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : const Color(0xFFFFFFFF);
-Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8);
-Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14FFFFFF) : const Color(0xFFE5E7EB);
+Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
+Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
+Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7);
+Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : const Color(0xFFB5CDD0);
+Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5);
+Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
 
 const Color _purple  = Color(0xFF89F336);
 const Color _purpleL = Color(0xFFE5FFD0);
@@ -253,7 +253,7 @@ class _HomeTab extends StatelessWidget {
               begin: Alignment.topLeft, end: Alignment.bottomRight,
               colors: dark
                   ? [const Color(0xFF1A1A1A), const Color(0xFF1E1E1E)]
-                  : [const Color(0xFFF2F3F8), const Color(0xFFE5FFD0)],
+                  : [const Color(0xFF93B1B5), const Color(0xFFE5FFD0)],
             ),
           ),
           padding: const EdgeInsets.fromLTRB(20, 58, 20, 24),
@@ -430,7 +430,7 @@ class _ActiveDeliveryPreview extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: dark ? const Color(0xFF0F1A12) : const Color(0xFFECFDF5),
+        color: dark ? const Color(0xFF0F1A12) : const Color(0xFF8EC4C8),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: _green.withOpacity(0.3)),
       ),
@@ -691,7 +691,7 @@ class _OrderDetailSheet extends StatelessWidget {
                     return Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: dark ? const Color(0xFF3A3A3A) : const Color(0xFFF0F1F8),
+                        color: dark ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7),
                         borderRadius: BorderRadius.circular(16)),
                       child: Row(children: [
                         Container(
@@ -758,7 +758,7 @@ class _OrderDetailSheet extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: dark ? const Color(0xFF3A3A3A) : const Color(0xFFF0F1F8),
+                    color: dark ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7),
                     borderRadius: BorderRadius.circular(16)),
                   child: Text(order.description,
                     style: TextStyle(color: _textPri(context), fontSize: 14, height: 1.55)),
@@ -772,7 +772,7 @@ class _OrderDetailSheet extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: dark ? const Color(0xFF3A3A3A) : const Color(0xFFF0F1F8),
+                    color: dark ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7),
                     borderRadius: BorderRadius.circular(16)),
                   child: Column(children: [
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

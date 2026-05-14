@@ -130,8 +130,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final dark = _isDark(context);
-    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
-    final textSec = dark ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
+    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
+    final textSec = dark ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
     final cardBg  = dark ? const Color(0xFF2C2C2C) : Colors.white;
     const purple  = Color(0xFF89F336);
     const orange  = Color(0xFF89F336);

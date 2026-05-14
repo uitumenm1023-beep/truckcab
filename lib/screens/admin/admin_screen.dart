@@ -95,12 +95,12 @@ class _AdminScreenState extends State<AdminScreen>
   @override
   Widget build(BuildContext context) {
     final dark    = _isDark(context);
-    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
-    final textSec = dark ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
+    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
+    final textSec = dark ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
     final card    = dark ? const Color(0xFF2C2C2C) : Colors.white;
-    final border  = dark ? const Color(0x14FFFFFF) : const Color(0xFFE5E7EB);
-    final bg      = dark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8);
-    final soft    = dark ? const Color(0xFF3A3A3A) : const Color(0xFFF0F1F8);
+    final border  = dark ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
+    final bg      = dark ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5);
+    final soft    = dark ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7);
 
     final provider   = context.watch<PaymentProvider>();
     final allPay     = provider.allPayments;

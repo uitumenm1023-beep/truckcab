@@ -28,16 +28,16 @@ class AppColors {
   static const Color orange = Color(0xFF89F336);
 
   // ── Light Theme ─────────────────────────────────────────────────────────────
-  static const Color lightBackground   = Color(0xFFF2F3F8);
-  static const Color lightSurface      = Color(0xFFFFFFFF);
+  static const Color lightBackground   = Color(0xFF93B1B5);
+  static const Color lightSurface      = Color(0xFFB5CDD0);
   static const Color lightCard         = Color(0xFFE5FFD0); // lavender cards
-  static const Color lightCardAlt      = Color(0xFFF2F3F8); // Track Package card
-  static const Color lightTextPrimary  = Color(0xFF4A4A4A);
-  static const Color lightTextSecondary= Color(0xFF8A8FA8);
-  static const Color lightBorder       = Color(0xFFDDDDDD);
-  static const Color lightInputFill    = Color(0xFFFFFFFF);
-  static const Color lightDot          = Color(0xFFDDDDDD); // inactive progress dot
-  static const Color lightIcon         = Color(0xFF8A8FA8);
+  static const Color lightCardAlt      = Color(0xFF93B1B5); // Track Package card
+  static const Color lightTextPrimary  = Color(0xFF1A2B2D);
+  static const Color lightTextSecondary= Color(0xFF2A4A50);
+  static const Color lightBorder       = Color(0xFF5E8A8F);
+  static const Color lightInputFill    = Color(0xFFB5CDD0);
+  static const Color lightDot          = Color(0xFF5E8A8F); // inactive progress dot
+  static const Color lightIcon         = Color(0xFF2A4A50);
 
   // ── Dark Theme ──────────────────────────────────────────────────────────────
   static const Color darkBackground    = Color(0xFF1E1E1E);

@@ -12,12 +12,12 @@ import '../../providers/order_provider.dart';
 import '../../routes/app_routes.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
-Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
-Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
-Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFFF0F1F8);
-Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : const Color(0xFFFFFFFF);
-Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14FFFFFF) : const Color(0xFFE5E7EB);
-Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8);
+Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
+Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
+Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7);
+Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : const Color(0xFFB5CDD0);
+Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
+Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5);
 
 const Color _purple     = Color(0xFF89F336);
 const Color _purpleL    = Color(0xFFE5FFD0);
@@ -165,7 +165,7 @@ class _HomeTab extends StatelessWidget {
             begin: Alignment.topLeft, end: Alignment.bottomRight,
             colors: dark
                 ? [const Color(0xFF1A1A1A), const Color(0xFF1E1E1E)]
-                : [const Color(0xFFF2F3F8), const Color(0xFFE5FFD0)],
+                : [const Color(0xFF93B1B5), const Color(0xFFE5FFD0)],
           ),
         ),
         padding: const EdgeInsets.fromLTRB(20, 58, 20, 24),
@@ -338,7 +338,7 @@ class _ShipmentCard extends StatelessWidget {
       case AppStatus.pickedUp:  return const Color(0xFF3B82F6);
       case AppStatus.onTheWay:  return _orange;
       case AppStatus.delivered: return _green;
-      default: return const Color(0xFF6B7280);
+      default: return const Color(0xFF2A4A50);
     }
   }
   String get _sl {
@@ -488,12 +488,12 @@ class _TrackCard extends StatelessWidget {
 
   Color get _sc {
     switch (order.status) {
-      case AppStatus.open:      return const Color(0xFF6B7280);
+      case AppStatus.open:      return const Color(0xFF2A4A50);
       case AppStatus.accepted:  return _purple;
       case AppStatus.pickedUp:  return const Color(0xFF3B82F6);
       case AppStatus.onTheWay:  return _orange;
       case AppStatus.delivered: return _green;
-      default: return const Color(0xFF6B7280);
+      default: return const Color(0xFF2A4A50);
     }
   }
   String get _sl {
