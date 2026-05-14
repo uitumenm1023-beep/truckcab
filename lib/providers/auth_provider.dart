@@ -96,13 +96,14 @@ class AppAuthProvider extends ChangeNotifier {
     int yearsExperience = 0,
     bool hasCrash = false,
     int crashCount = 0,
+    String phoneNumber = '',
   }) async {
     _setLoading(true); _clearError();
     try {
       final cred = await _svc.signUpWithEmail(
         email: email, password: password, role: role, name: name, birthdate: birthdate,
         vehicleType: vehicleType, yearsExperience: yearsExperience,
-        hasCrash: hasCrash, crashCount: crashCount,
+        hasCrash: hasCrash, crashCount: crashCount, phoneNumber: phoneNumber,
       );
       _user = cred.user;
       await _svc.reloadUser();

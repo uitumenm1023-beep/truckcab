@@ -147,6 +147,7 @@ class OrderProvider extends ChangeNotifier {
 
   Future<bool> createOrder({
     required String sellerId,
+    required String sellerName,
     required String pickupLocation,
     required String dropoffLocation,
     required String description,
@@ -163,6 +164,7 @@ class OrderProvider extends ChangeNotifier {
     try {
       await _orderService.createOrder(
         sellerId: sellerId,
+        sellerName: sellerName,
         pickupLocation: pickupLocation,
         dropoffLocation: dropoffLocation,
         description: description,

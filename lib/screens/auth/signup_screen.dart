@@ -16,7 +16,6 @@ Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14FFFFFF) : con
 
 const Color _purple = Color(0xFF7B6CF6);
 const Color _orange = Color(0xFFFF5A1F);
-const Color _green  = Color(0xFF22C55E);
 
 class _VehicleData {
   final String id, label, emoji, description;
@@ -39,6 +38,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   final _nameCtrl  = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passCtrl  = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   final _formKey   = GlobalKey<FormState>();
 
   String    _role        = AppRoles.seller;
@@ -67,7 +67,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
 
   @override
   void dispose() {
-    _nameCtrl.dispose(); _emailCtrl.dispose(); _passCtrl.dispose();
+    _nameCtrl.dispose(); _emailCtrl.dispose(); _passCtrl.dispose(); _phoneCtrl.dispose();
     _ac.dispose();
     super.dispose();
   }
@@ -115,6 +115,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
       role: _role, name: _nameCtrl.text.trim(), birthdate: _birthdate!,
       vehicleType: _vehicle ?? '', yearsExperience: _yearsExp,
       hasCrash: _hasCrash ?? false, crashCount: _crashCount,
+      phoneNumber: _phoneCtrl.text.trim(),
     );
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -241,6 +242,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
         context: context);
       case 3: return _StepInfo(
         nameCtrl: _nameCtrl, emailCtrl: _emailCtrl, passCtrl: _passCtrl,
+        phoneCtrl: _phoneCtrl, role: _role,
         formKey: _formKey, obscurePass: _obscurePass, birthdate: _birthdate,
         onTogglePass: () => setState(() => _obscurePass = !_obscurePass),
         onBirthdate: (d) => setState(() => _birthdate = d),
@@ -470,7 +472,8 @@ class _YesNo extends StatelessWidget {
 
 // ── Step 3: Basic Info ────────────────────────────────────────────────────────
 class _StepInfo extends StatelessWidget {
-  final TextEditingController nameCtrl, emailCtrl, passCtrl;
+  final TextEditingController nameCtrl, emailCtrl, passCtrl, phoneCtrl;
+  final String role;
   final GlobalKey<FormState> formKey;
   final bool obscurePass;
   final DateTime? birthdate;
@@ -479,6 +482,7 @@ class _StepInfo extends StatelessWidget {
   final BuildContext context;
   const _StepInfo({
     required this.nameCtrl, required this.emailCtrl, required this.passCtrl,
+    required this.phoneCtrl, required this.role,
     required this.formKey, required this.obscurePass, required this.birthdate,
     required this.onTogglePass, required this.onBirthdate, required this.context});
 
@@ -534,6 +538,15 @@ class _StepInfo extends StatelessWidget {
           suffix: GestureDetector(
             onTap: onTogglePass,
             child: Icon(obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: _textSec(context), size: 20))),
+        if (role == AppRoles.seller) ...[
+          const SizedBox(height: 14),
+          _Field(ctrl: phoneCtrl, label: 'Phone Number', hint: '+976 9900 0000', icon: Icons.phone_outlined,
+            keyboard: TextInputType.phone, context: context,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Phone number is required for sellers';
+              return null;
+            }),
+        ],
         const SizedBox(height: 20),
         Container(padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(color: _purple.withOpacity(0.08), borderRadius: BorderRadius.circular(16),

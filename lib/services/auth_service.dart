@@ -33,6 +33,7 @@ class AuthService {
     int yearsExperience = 0,
     bool hasCrash = false,
     int crashCount = 0,
+    String phoneNumber = '',
   }) async {
     final e = email.trim().toLowerCase();
     final r = role.trim().toLowerCase();
@@ -49,7 +50,7 @@ class AuthService {
       await _createDoc(
         userId: user.uid, email: e, role: r, name: name, birthdate: birthdate,
         vehicleType: vehicleType, yearsExperience: yearsExperience,
-        hasCrash: hasCrash, crashCount: crashCount,
+        hasCrash: hasCrash, crashCount: crashCount, phoneNumber: phoneNumber,
       );
       return cred;
     } on FirebaseAuthException {
@@ -101,6 +102,7 @@ class AuthService {
     int yearsExperience = 0,
     bool hasCrash = false,
     int crashCount = 0,
+    String phoneNumber = '',
   }) async {
     try {
       final data = <String, dynamic>{
@@ -113,6 +115,7 @@ class AuthService {
         'lastSeen': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
+        'phoneNumber': phoneNumber.trim(),
       };
       if (role == 'driver') {
         data['vehicleType'] = vehicleType;
