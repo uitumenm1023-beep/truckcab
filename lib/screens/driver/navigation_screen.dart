@@ -13,9 +13,9 @@ import '../../models/order_model.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
 
-const _purple = Color(0xFF7B6CF6);
-const _orange = Color(0xFFFF5A1F);
-const _green  = Color(0xFF22C55E);
+const _purple = Color(0xFF89F336);
+const _orange = Color(0xFF89F336);
+const _green  = Color(0xFF89F336);
 const _blue   = Color(0xFF3B82F6);
 
 class NavigationScreen extends StatefulWidget {
@@ -226,9 +226,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final dark    = _isDark(context);
-    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E);
+    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
     final textSec = dark ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
-    final cardBg  = dark ? const Color(0xFF1B1F26) : Colors.white;
+    final cardBg  = dark ? const Color(0xFF2C2C2C) : Colors.white;
     final destColor = widget.isPickup ? _green : _orange;
 
     return Scaffold(
@@ -395,9 +395,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   Widget _buildLocating(bool dark, Color textPri, Color textSec) {
-    final cardBg = dark ? const Color(0xFF1B1F26) : Colors.white;
+    final cardBg = dark ? const Color(0xFF2C2C2C) : Colors.white;
     return Scaffold(
-      backgroundColor: dark ? const Color(0xFF101216) : const Color(0xFFF2F3F8),
+      backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8),
       appBar: AppBar(
         title: Text(_destLabel,
           style: TextStyle(color: textPri, fontWeight: FontWeight.w700)),
@@ -480,7 +480,7 @@ class _TopBar extends StatelessWidget {
               width: 40, height: 40,
               decoration: BoxDecoration(
                 color: dark
-                    ? const Color(0xFF252A33)
+                    ? const Color(0xFF3A3A3A)
                     : const Color(0xFFF0F1F8),
                 shape: BoxShape.circle),
               child: Icon(Icons.arrow_back_rounded,
@@ -516,14 +516,14 @@ class _TopBar extends StatelessWidget {
             ? LinearProgressIndicator(
                 color: const Color(0xFF3B82F6),
                 backgroundColor:
-                    dark ? const Color(0xFF252A33) : const Color(0xFFE5E7EB),
+                    dark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E7EB),
                 minHeight: 3)
             : Row(children: [
                 _Pill(Icons.straighten_rounded, distText,
                   const Color(0xFF3B82F6), dark),
                 const SizedBox(width: 10),
                 _Pill(Icons.timer_outlined, etaText,
-                  const Color(0xFF7B6CF6), dark),
+                  const Color(0xFF89F336), dark),
               ]),
       ]),
     );
@@ -586,7 +586,7 @@ class _BottomBar extends StatelessWidget {
             width: 52, height: 52,
             decoration: BoxDecoration(
               color: dark
-                  ? const Color(0xFF252A33)
+                  ? const Color(0xFF3A3A3A)
                   : const Color(0xFFF0F1F8),
               borderRadius: BorderRadius.circular(16)),
             child: const Icon(Icons.my_location_rounded,
@@ -600,7 +600,7 @@ class _BottomBar extends StatelessWidget {
             height: 52, alignment: Alignment.center,
             decoration: BoxDecoration(
               color: dark
-                  ? const Color(0xFF252A33)
+                  ? const Color(0xFF3A3A3A)
                   : const Color(0xFFF0F1F8),
               borderRadius: BorderRadius.circular(16)),
             child: Row(mainAxisAlignment: MainAxisAlignment.center,

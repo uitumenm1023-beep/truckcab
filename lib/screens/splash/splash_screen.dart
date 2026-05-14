@@ -96,7 +96,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: dark ? const Color(0xFF101216) : const Color(0xFFF2F3F8),
+      backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8),
       body: Center(
         child: FadeTransition(
           opacity: _fade,
@@ -108,15 +108,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft, end: Alignment.bottomRight,
-                    colors: [Color(0xFF7B6CF6), Color(0xFF5B4CD6)]),
+                    colors: [Color(0xFF89F336), Color(0xFF5B4CD6)]),
                   shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: const Color(0xFF7B6CF6).withOpacity(0.4), blurRadius: 32, offset: const Offset(0, 12))]),
+                  boxShadow: [BoxShadow(color: const Color(0xFF89F336).withOpacity(0.4), blurRadius: 32, offset: const Offset(0, 12))]),
                 child: const Icon(Icons.local_shipping_rounded, color: Colors.white, size: 46)),
             ),
             const SizedBox(height: 24),
             Text('TruckCab',
               style: TextStyle(
-                color: dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E),
+                color: dark ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A),
                 fontSize: 34, fontWeight: FontWeight.w300, letterSpacing: 1.5)),
             const SizedBox(height: 6),
             Text('Delivering On Time',
@@ -125,7 +125,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             SizedBox(width: 28, height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: const Color(0xFF7B6CF6).withOpacity(0.6))),
+                color: const Color(0xFF89F336).withOpacity(0.6))),
           ]),
         ),
       ),

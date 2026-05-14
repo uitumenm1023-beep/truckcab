@@ -73,20 +73,20 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   @override
   Widget build(BuildContext context) {
     final dark     = _isDark(context);
-    final textPri  = dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E);
+    final textPri  = dark ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
     final textSec  = dark ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
-    final card     = dark ? const Color(0xFF1B1F26) : Colors.white;
-    final soft     = dark ? const Color(0xFF252A33) : const Color(0xFFF0F1F8);
+    final card     = dark ? const Color(0xFF2C2C2C) : Colors.white;
+    final soft     = dark ? const Color(0xFF3A3A3A) : const Color(0xFFF0F1F8);
     final border   = dark ? const Color(0x14FFFFFF) : const Color(0xFFE5E7EB);
-    const purple   = Color(0xFF7B6CF6);
-    const orange   = Color(0xFFFF5A1F);
-    const green    = Color(0xFF22C55E);
+    const purple   = Color(0xFF89F336);
+    const orange   = Color(0xFF89F336);
+    const green    = Color(0xFF89F336);
 
     final payments = context.watch<PaymentProvider>().userPayments;
     final hasPending = payments.any((p) => p.status == 'pending');
 
     return Scaffold(
-      backgroundColor: dark ? const Color(0xFF101216) : const Color(0xFFF2F3F8),
+      backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8),
       body: SafeArea(
         child: ListView(
           padding: EdgeInsets.fromLTRB(
@@ -98,7 +98,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 width: 48, height: 48,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF7B6CF6), Color(0xFF5B4CD6)]),
+                    colors: [Color(0xFF89F336), Color(0xFF5B4CD6)]),
                   shape: BoxShape.circle),
                 child: const Icon(Icons.local_shipping_rounded,
                   color: Colors.white, size: 24)),
@@ -124,7 +124,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft, end: Alignment.bottomRight,
-                  colors: [Color(0xFF7B6CF6), Color(0xFF5B4CD6)]),
+                  colors: [Color(0xFF89F336), Color(0xFF5B4CD6)]),
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
@@ -366,7 +366,7 @@ class _BankRow extends StatelessWidget {
         if (copyable) ...[
           const SizedBox(width: 6),
           const Icon(Icons.copy_rounded,
-            color: Color(0xFF7B6CF6), size: 14),
+            color: Color(0xFF89F336), size: 14),
         ],
       ]),
     ),
