@@ -63,7 +63,23 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final doc = await _fs.collection('users').doc(uid).get();
       if (!mounted) return;
-      final role = ((doc.data()?['role'] ?? '') as String).trim().toLowerCase();
+      final data    = doc.data() ?? {};
+      final role    = ((data['role'] ?? '') as String).trim().toLowerCase();
+      final isAdmin = data['isAdmin'] == true;
+
+      // Subscription gate — same check as SplashScreen
+      bool subscribed = isAdmin;
+      if (!subscribed) {
+        final expTs = data['subscriptionExpiry'];
+        if (expTs is Timestamp) {
+          subscribed = expTs.toDate().isAfter(DateTime.now());
+        }
+      }
+      if (!subscribed) {
+        Navigator.pushReplacementNamed(context, AppRoutes.subscription);
+        return;
+      }
+
       if (role == AppRoles.seller) {
         Navigator.pushReplacementNamed(context, AppRoutes.sellerHome);
       } else if (role == AppRoles.driver) {

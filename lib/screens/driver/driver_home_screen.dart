@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 
@@ -78,6 +79,7 @@ class DriverHomeScreen extends StatefulWidget {
 
 class _DriverHomeScreenState extends State<DriverHomeScreen> {
   int _tab = 0;
+  Position? _driverPosition;
 
   @override
   void initState() {
@@ -91,6 +93,20 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         context.read<NotificationProvider>().startNotificationsListener(uid);
       }
     });
+    _fetchDriverLocation();
+  }
+
+  Future<void> _fetchDriverLocation() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        final requested = await Geolocator.requestPermission();
+        if (requested == LocationPermission.denied || requested == LocationPermission.deniedForever) return;
+      }
+      if (permission == LocationPermission.deniedForever) return;
+      final pos = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium));
+      if (mounted) setState(() => _driverPosition = pos);
+    } catch (_) {}
   }
 
   @override
@@ -142,7 +158,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     final profile = auth.currentUserProfile;
 
     final pages = [
-      _HomeTab(profile: profile, onSendRequest: _sendRequest, onRefresh: _refresh),
+      _HomeTab(profile: profile, onSendRequest: _sendRequest, onRefresh: _refresh, driverPosition: _driverPosition),
       _ActiveTab(onUpdateStatus: _updateStatus, onRefresh: _refresh),
       const _ChatsTab(),
       _ProfileTab(onLogout: _logout),
@@ -214,7 +230,8 @@ class _HomeTab extends StatelessWidget {
   final dynamic profile;
   final Future<void> Function(OrderModel) onSendRequest;
   final Future<void> Function() onRefresh;
-  const _HomeTab({required this.profile, required this.onSendRequest, required this.onRefresh});
+  final Position? driverPosition;
+  const _HomeTab({required this.profile, required this.onSendRequest, required this.onRefresh, this.driverPosition});
 
   @override
   Widget build(BuildContext context) {
@@ -313,7 +330,7 @@ class _HomeTab extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                     sliver: SliverList(delegate: SliverChildBuilderDelegate(
                       (ctx, i) => Padding(padding: const EdgeInsets.only(bottom: 12),
-                        child: _AvailableOrderCard(order: orders.availableOrders[i], onSendRequest: onSendRequest)),
+                        child: _AvailableOrderCard(order: orders.availableOrders[i], onSendRequest: onSendRequest, driverPosition: driverPosition)),
                       childCount: orders.availableOrders.length,
                     )),
                   ),
@@ -452,62 +469,324 @@ class _ActiveDeliveryPreview extends StatelessWidget {
 class _AvailableOrderCard extends StatelessWidget {
   final OrderModel order;
   final Future<void> Function(OrderModel) onSendRequest;
-  const _AvailableOrderCard({required this.order, required this.onSendRequest});
+  final Position? driverPosition;
+  const _AvailableOrderCard({required this.order, required this.onSendRequest, this.driverPosition});
+
+  String? _distanceLabel() {
+    final pos = driverPosition;
+    final lat = order.pickupLat;
+    final lng = order.pickupLng;
+    if (pos == null || lat == null || lng == null) return null;
+    final meters = Geolocator.distanceBetween(pos.latitude, pos.longitude, lat, lng);
+    if (meters < 1000) return '${meters.round()} m to pickup';
+    return '${(meters / 1000).toStringAsFixed(1)} km to pickup';
+  }
+
+  void _showDetails(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _OrderDetailSheet(order: order, onSendRequest: onSendRequest),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: _card(context), borderRadius: BorderRadius.circular(24), border: Border.all(color: _border(context))),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Expanded(child: Text(order.description,
-            style: TextStyle(color: _textPri(context), fontSize: 15, fontWeight: FontWeight.w700),
-            maxLines: 2, overflow: TextOverflow.ellipsis)),
-          const SizedBox(width: 12),
-          Text('\$${order.price.toStringAsFixed(0)}',
-            style: const TextStyle(color: _green, fontSize: 18, fontWeight: FontWeight.w800)),
+    final hasPhotos = order.imageUrls.isNotEmpty;
+    return GestureDetector(
+      onTap: () => _showDetails(context),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: _card(context),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _border(context)),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Photo thumbnails strip
+          if (hasPhotos) ...[
+            SizedBox(
+              height: 110,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const ClampingScrollPhysics(),
+                itemCount: order.imageUrls.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) => ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.network(
+                    order.imageUrls[i],
+                    width: 110, height: 110, fit: BoxFit.cover,
+                    loadingBuilder: (_, child, progress) => progress == null
+                        ? child
+                        : Container(width: 110, height: 110, color: _soft(context),
+                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: _purple))),
+                    errorBuilder: (_, __, ___) => Container(width: 110, height: 110, color: _soft(context),
+                      child: Icon(Icons.broken_image_outlined, color: _textSec(context))),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          // Description + price
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Text(order.description,
+              style: TextStyle(color: _textPri(context), fontSize: 15, fontWeight: FontWeight.w700),
+              maxLines: 3, overflow: TextOverflow.ellipsis)),
+            const SizedBox(width: 12),
+            Text('₮${order.price.toStringAsFixed(0)}',
+              style: const TextStyle(color: _green, fontSize: 18, fontWeight: FontWeight.w800)),
+          ]),
+          const SizedBox(height: 12),
+          // Pickup
+          _LocationRow(
+            icon: Icons.my_location_outlined, label: 'Pickup',
+            address: order.pickupLocation, color: _green, context: context),
+          const SizedBox(height: 8),
+          // Dropoff
+          _LocationRow(
+            icon: Icons.flag_outlined, label: 'Dropoff',
+            address: order.dropoffLocation, color: _orange, context: context),
+          const SizedBox(height: 8),
+          // Distance badge + tap hint
+          Row(children: [
+            Builder(builder: (_) {
+              final dist = _distanceLabel();
+              if (dist == null) return const SizedBox.shrink();
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _purple.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: _purple.withOpacity(0.25))),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.near_me_rounded, color: _purple, size: 12),
+                  const SizedBox(width: 4),
+                  Text(dist, style: const TextStyle(color: _purple, fontSize: 11, fontWeight: FontWeight.w700)),
+                ]));
+            }),
+            const Spacer(),
+            Text('Tap for full details',
+              style: TextStyle(color: _purple.withOpacity(0.65), fontSize: 11)),
+            const SizedBox(width: 4),
+            Icon(Icons.open_in_new_rounded, color: _purple.withOpacity(0.65), size: 12),
+          ]),
+          const SizedBox(height: 12),
+          // Request button — its own tap, won't trigger card tap
+          GestureDetector(
+            onTap: () => onSendRequest(order),
+            child: Container(
+              height: 48, alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _orange,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: _orange.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))]),
+              child: const Text('Send Delivery Request',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)))),
+          const SizedBox(height: 8),
+          Text('Seller must approve before delivery starts',
+            style: TextStyle(color: _textSec(context), fontSize: 11)),
         ]),
-        const SizedBox(height: 12),
-        Row(children: [
-          Expanded(child: _Pill(Icons.my_location_outlined, order.pickupLocation, context)),
-          const SizedBox(width: 8),
-          Expanded(child: _Pill(Icons.flag_outlined, order.dropoffLocation, context)),
-        ]),
-        const SizedBox(height: 14),
-        GestureDetector(
-          onTap: () => onSendRequest(order),
-          child: Container(height: 48, alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: _orange,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: _orange.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))]),
-            child: const Text('Send Delivery Request',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)))),
-        const SizedBox(height: 8),
-        Text('Seller must approve before delivery starts',
-          style: TextStyle(color: _textSec(context), fontSize: 11)),
-      ]),
+      ),
     );
   }
 }
 
-class _Pill extends StatelessWidget {
+// Shared location row used in card and detail sheet
+class _LocationRow extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String address;
+  final Color color;
   final BuildContext context;
-  const _Pill(this.icon, this.label, this.context);
+  const _LocationRow({
+    required this.icon, required this.label,
+    required this.address, required this.color, required this.context,
+  });
 
   @override
-  Widget build(BuildContext ctx) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(color: _soft(context), borderRadius: BorderRadius.circular(10)),
-    child: Row(children: [
-      Icon(icon, color: _textSec(context), size: 13),
-      const SizedBox(width: 5),
-      Expanded(child: Text(label, style: TextStyle(color: _textSec(context), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)),
-    ]),
-  );
+  Widget build(BuildContext ctx) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Container(
+      width: 32, height: 32,
+      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+      child: Icon(icon, color: color, size: 16)),
+    const SizedBox(width: 10),
+    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: TextStyle(color: _textSec(context), fontSize: 11, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 1),
+      Text(address, style: TextStyle(color: _textPri(context), fontSize: 13, fontWeight: FontWeight.w600)),
+    ])),
+  ]);
+}
+
+// ── Order Detail Bottom Sheet ─────────────────────────────────────────────────
+class _OrderDetailSheet extends StatelessWidget {
+  final OrderModel order;
+  final Future<void> Function(OrderModel) onSendRequest;
+  const _OrderDetailSheet({required this.order, required this.onSendRequest});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = _isDark(context);
+    return DraggableScrollableSheet(
+      initialChildSize: 0.82,
+      maxChildSize: 0.95,
+      minChildSize: 0.45,
+      builder: (_, controller) => Container(
+        decoration: BoxDecoration(
+          color: _card(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(children: [
+          const SizedBox(height: 12),
+          Container(width: 40, height: 4,
+            decoration: BoxDecoration(
+              color: _textSec(context).withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 4),
+          Expanded(
+            child: ListView(
+              controller: controller,
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + MediaQuery.of(context).padding.bottom),
+              children: [
+                // Header
+                Row(children: [
+                  Expanded(child: Text('Order Details',
+                    style: TextStyle(color: _textPri(context), fontSize: 22, fontWeight: FontWeight.w700))),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _green.withOpacity(0.3))),
+                    child: Text('₮${order.price.toStringAsFixed(0)}',
+                      style: const TextStyle(color: _green, fontSize: 20, fontWeight: FontWeight.w800))),
+                ]),
+                const SizedBox(height: 20),
+
+                // Photos
+                if (order.imageUrls.isNotEmpty) ...[
+                  Text('Photos (${order.imageUrls.length})',
+                    style: TextStyle(color: _textSec(context), fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.4)),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 200,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: order.imageUrls.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 10),
+                      itemBuilder: (_, i) => ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(
+                          order.imageUrls[i],
+                          width: 220, height: 200, fit: BoxFit.cover,
+                          loadingBuilder: (_, child, progress) => progress == null
+                              ? child
+                              : Container(width: 220, height: 200, color: _soft(context),
+                                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: _purple))),
+                          errorBuilder: (_, __, ___) => Container(width: 220, height: 200, color: _soft(context),
+                            child: Icon(Icons.broken_image_outlined, color: _textSec(context), size: 36)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
+                // Description
+                Text('Package Description',
+                  style: TextStyle(color: _textSec(context), fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.4)),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: dark ? const Color(0xFF252A33) : const Color(0xFFF0F1F8),
+                    borderRadius: BorderRadius.circular(16)),
+                  child: Text(order.description,
+                    style: TextStyle(color: _textPri(context), fontSize: 14, height: 1.55)),
+                ),
+                const SizedBox(height: 20),
+
+                // Locations
+                Text('Locations',
+                  style: TextStyle(color: _textSec(context), fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.4)),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: dark ? const Color(0xFF252A33) : const Color(0xFFF0F1F8),
+                    borderRadius: BorderRadius.circular(16)),
+                  child: Column(children: [
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Container(width: 38, height: 38,
+                        decoration: BoxDecoration(color: _green.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                        child: const Icon(Icons.my_location_rounded, color: _green, size: 20)),
+                      const SizedBox(width: 12),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('Pickup Location',
+                          style: TextStyle(color: _textSec(context), fontSize: 11, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 3),
+                        Text(order.pickupLocation,
+                          style: TextStyle(color: _textPri(context), fontSize: 14, fontWeight: FontWeight.w600, height: 1.4)),
+                      ])),
+                    ]),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 8, 0, 8),
+                      child: Row(children: [
+                        Container(width: 2, height: 28,
+                          decoration: BoxDecoration(
+                            color: _textSec(context).withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(1))),
+                      ]),
+                    ),
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Container(width: 38, height: 38,
+                        decoration: BoxDecoration(color: _orange.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                        child: const Icon(Icons.flag_rounded, color: _orange, size: 20)),
+                      const SizedBox(width: 12),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('Dropoff Location',
+                          style: TextStyle(color: _textSec(context), fontSize: 11, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 3),
+                        Text(order.dropoffLocation,
+                          style: TextStyle(color: _textPri(context), fontSize: 14, fontWeight: FontWeight.w600, height: 1.4)),
+                      ])),
+                    ]),
+                  ]),
+                ),
+                const SizedBox(height: 28),
+
+                // Send request button
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    onSendRequest(order);
+                  },
+                  child: Container(
+                    height: 56, alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _orange,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [BoxShadow(color: _orange.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))]),
+                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(Icons.local_shipping_rounded, color: Colors.white, size: 20),
+                      SizedBox(width: 10),
+                      Text('Send Delivery Request',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                    ]))),
+                const SizedBox(height: 10),
+                Center(child: Text('Seller must approve before delivery starts',
+                  style: TextStyle(color: _textSec(context), fontSize: 12))),
+              ],
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
 }
 
 // ── Active Orders Tab ─────────────────────────────────────────────────────────
@@ -766,7 +1045,7 @@ class _ProfileTab extends StatelessWidget {
     final profile = auth.currentUserProfile;
     final name    = profile?.displayName ?? 'Driver';
     final email   = auth.currentUserEmail ?? '';
-    final vehicle = (profile?.vehicleType ?? '') as String;
+    final vehicle = profile?.vehicleType ?? '';
     final years   = profile?.yearsExperience ?? 0;
     final online  = profile?.isOnline ?? false;
     final dark    = _isDark(context);
@@ -823,40 +1102,6 @@ class _ProfileTab extends StatelessWidget {
                 ]),
               ),
             ),
-          ],
-          // TEMPORARY — remove after tapping once
-          if (!isAdmin) ...[
-            const SizedBox(height: 10),
-            Builder(builder: (ctx) {
-              final uid = ctx.watch<AppAuthProvider>().currentUserId ?? '';
-              return GestureDetector(
-                onTap: () async {
-                  if (uid.isEmpty) return;
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(uid)
-                      .update({'isAdmin': true});
-                  if (!ctx.mounted) return;
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(content: Text('Admin enabled — please restart the app')));
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _card(ctx),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: _purple.withOpacity(0.4))),
-                  child: Row(children: [
-                    Icon(Icons.lock_open_rounded, color: _purple, size: 20),
-                    const SizedBox(width: 14),
-                    Text('Become Admin (tap once)',
-                      style: TextStyle(color: _textPri(ctx), fontWeight: FontWeight.w600, fontSize: 14)),
-                    const Spacer(),
-                    Icon(Icons.chevron_right, color: _textSec(ctx), size: 18),
-                  ]),
-                ),
-              );
-            }),
           ],
           const SizedBox(height: 28),
           GestureDetector(

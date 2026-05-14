@@ -4,12 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../core/constants/app_status.dart';
 import '../models/order_model.dart';
-import '../services/chat_service.dart';
 import '../services/order_service.dart';
 
 class OrderProvider extends ChangeNotifier {
   final OrderService _orderService = OrderService();
-  final ChatService _chatService = ChatService();
 
   List<OrderModel> _availableOrders = [];
   List<OrderModel> _sellerOrders = [];
@@ -195,11 +193,13 @@ class OrderProvider extends ChangeNotifier {
     try {
       final selectedOrder = _availableOrders.firstWhere(
         (order) => order.id == orderId,
+        orElse: () => throw Exception('Order no longer available'),
       );
 
-      await _chatService.sendChatRequest(
+      // Use OrderService.acceptOrder which validates the order is still OPEN
+      // before creating the chat request (prevents accepting already-claimed orders).
+      await _orderService.acceptOrder(
         orderId: selectedOrder.id,
-        sellerId: selectedOrder.sellerId,
         driverId: driverId,
         orderDescription: selectedOrder.description,
         pickupLocation: selectedOrder.pickupLocation,

@@ -41,6 +41,7 @@ class _AppLifecycleGate extends StatefulWidget {
 
 class _AppLifecycleGateState extends State<_AppLifecycleGate> with WidgetsBindingObserver {
   ThemeMode _themeMode = ThemeMode.dark;
+  final GlobalKey<NavigatorState> _navKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
@@ -141,6 +142,7 @@ class _AppLifecycleGateState extends State<_AppLifecycleGate> with WidgetsBindin
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      navigatorKey: _navKey,
       title: 'TruckCab',
       theme: _light,
       darkTheme: _dark,
@@ -151,7 +153,7 @@ class _AppLifecycleGateState extends State<_AppLifecycleGate> with WidgetsBindin
       builder: (ctx, child) => _ThemeToggleProvider(
         themeMode: _themeMode,
         onToggle: _toggleTheme,
-        child: _NotificationToastWrapper(child: child!),
+        child: _NotificationToastWrapper(navKey: _navKey, child: child!),
       ),
     );
   }
@@ -180,7 +182,8 @@ extension ThemeToggle on BuildContext {
 // ── In-app notification toast overlay ────────────────────────────────────────
 class _NotificationToastWrapper extends StatelessWidget {
   final Widget child;
-  const _NotificationToastWrapper({required this.child});
+  final GlobalKey<NavigatorState> navKey;
+  const _NotificationToastWrapper({required this.child, required this.navKey});
 
   IconData _iconFor(String type) {
     switch (type) {
@@ -206,6 +209,27 @@ class _NotificationToastWrapper extends StatelessWidget {
     }
   }
 
+  void _navigate(dynamic notification) {
+    final nav = navKey.currentState;
+    if (nav == null) return;
+    final type   = (notification.type ?? '') as String;
+    final chatId = (notification.chatId ?? '') as String;
+    final title  = (notification.title ?? '') as String;
+
+    if (type == 'chat_message' || type == 'chat_accepted') {
+      if (chatId.isNotEmpty) {
+        nav.pushNamed(AppRoutes.chatScreen,
+            arguments: ChatScreenArgs(chatId: chatId, title: title));
+      } else {
+        nav.pushNamed(AppRoutes.chatList);
+      }
+    } else if (type == 'chat_request') {
+      nav.pushNamed(AppRoutes.chatRequests);
+    } else {
+      nav.pushNamed(AppRoutes.notifications);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<NotificationProvider>(
@@ -222,7 +246,10 @@ class _NotificationToastWrapper extends StatelessWidget {
                 notification: toast,
                 color: _colorFor(toast.type),
                 icon: _iconFor(toast.type),
-                onDismiss: notifProvider.dismissToast,
+                onTap: () {
+                  notifProvider.dismissToast();
+                  _navigate(toast);
+                },
               ),
             ),
         ]);
@@ -235,8 +262,8 @@ class _ToastCard extends StatefulWidget {
   final dynamic notification;
   final Color color;
   final IconData icon;
-  final VoidCallback onDismiss;
-  const _ToastCard({required this.notification, required this.color, required this.icon, required this.onDismiss});
+  final VoidCallback onTap;
+  const _ToastCard({required this.notification, required this.color, required this.icon, required this.onTap});
 
   @override
   State<_ToastCard> createState() => _ToastCardState();
@@ -260,9 +287,9 @@ class _ToastCardState extends State<_ToastCard> with SingleTickerProviderStateMi
   @override
   void dispose() { _ac.dispose(); super.dispose(); }
 
-  Future<void> _dismiss() async {
+  Future<void> _handleTap() async {
     await _ac.reverse();
-    widget.onDismiss();
+    widget.onTap();
   }
 
   @override
@@ -276,7 +303,7 @@ class _ToastCardState extends State<_ToastCard> with SingleTickerProviderStateMi
         child: Material(
           color: Colors.transparent,
           child: GestureDetector(
-            onTap: _dismiss,
+            onTap: _handleTap,
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
