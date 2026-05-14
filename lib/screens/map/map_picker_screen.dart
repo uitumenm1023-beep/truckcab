@@ -130,11 +130,11 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final dark = _isDark(context);
-    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E);
+    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
     final textSec = dark ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
-    final cardBg  = dark ? const Color(0xFF1B1F26) : Colors.white;
-    const purple  = Color(0xFF7B6CF6);
-    const orange  = Color(0xFFFF5A1F);
+    final cardBg  = dark ? const Color(0xFF2C2C2C) : Colors.white;
+    const purple  = Color(0xFF89F336);
+    const orange  = Color(0xFF89F336);
 
     return Scaffold(
       appBar: AppBar(
@@ -173,7 +173,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         // Center pin (always fixed in center)
         const Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.location_pin, color: Color(0xFFFF5A1F), size: 46),
+            Icon(Icons.location_pin, color: Color(0xFF89F336), size: 46),
             SizedBox(height: 23), // offset for pin tip
           ]),
         ),

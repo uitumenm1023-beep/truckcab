@@ -68,17 +68,17 @@ class _AppLifecycleGateState extends State<_AppLifecycleGate> with WidgetsBindin
   static final _dark = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: const Color(0xFF101216),
+    scaffoldBackgroundColor: const Color(0xFF1E1E1E),
     fontFamily: 'Roboto',
     colorScheme: const ColorScheme.dark(
-      primary: Color(0xFF7B6CF6),
-      secondary: Color(0xFFFF5A1F),
-      surface: Color(0xFF1B1F26),
+      primary: Color(0xFF89F336),
+      secondary: Color(0xFF89F336),
+      surface: Color(0xFF2C2C2C),
       error: Colors.redAccent,
     ),
-    splashColor: const Color(0x1A7B6CF6),
-    highlightColor: const Color(0x0D7B6CF6),
-    hoverColor: const Color(0x1A7B6CF6),
+    splashColor: const Color(0x1A89F336),
+    highlightColor: const Color(0x0D89F336),
+    hoverColor: const Color(0x1A89F336),
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       foregroundColor: Color(0xFFF5F7FA),
@@ -87,17 +87,17 @@ class _AppLifecycleGateState extends State<_AppLifecycleGate> with WidgetsBindin
       titleTextStyle: TextStyle(color: Color(0xFFF5F7FA), fontSize: 24, fontWeight: FontWeight.w500),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: const Color(0xFF1B1F26),
-      indicatorColor: const Color(0x227B6CF6),
+      backgroundColor: const Color(0xFF2C2C2C),
+      indicatorColor: const Color(0x2289F336),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const IconThemeData(color: Color(0xFF7B6CF6));
+          return const IconThemeData(color: Color(0xFF89F336));
         }
         return const IconThemeData(color: Color(0xFF98A1AE));
       }),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const TextStyle(color: Color(0xFF7B6CF6), fontWeight: FontWeight.w700, fontSize: 12);
+          return const TextStyle(color: Color(0xFF89F336), fontWeight: FontWeight.w700, fontSize: 12);
         }
         return const TextStyle(color: Color(0xFF98A1AE), fontSize: 12);
       }),
@@ -111,27 +111,27 @@ class _AppLifecycleGateState extends State<_AppLifecycleGate> with WidgetsBindin
     scaffoldBackgroundColor: const Color(0xFFF2F3F8),
     fontFamily: 'Roboto',
     colorScheme: const ColorScheme.light(
-      primary: Color(0xFF7B6CF6),
-      secondary: Color(0xFFFF5A1F),
+      primary: Color(0xFF89F336),
+      secondary: Color(0xFF89F336),
       surface: Color(0xFFFFFFFF),
       error: Colors.redAccent,
     ),
-    splashColor: const Color(0x1A7B6CF6),
-    highlightColor: const Color(0x0D7B6CF6),
-    hoverColor: const Color(0x1A7B6CF6),
+    splashColor: const Color(0x1A89F336),
+    highlightColor: const Color(0x0D89F336),
+    hoverColor: const Color(0x1A89F336),
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
-      foregroundColor: Color(0xFF1A1A2E),
+      foregroundColor: Color(0xFF4A4A4A),
       elevation: 0,
       centerTitle: false,
-      titleTextStyle: TextStyle(color: Color(0xFF1A1A2E), fontSize: 24, fontWeight: FontWeight.w500),
+      titleTextStyle: TextStyle(color: Color(0xFF4A4A4A), fontSize: 24, fontWeight: FontWeight.w500),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: const Color(0xFFFFFFFF),
-      indicatorColor: const Color(0x227B6CF6),
+      indicatorColor: const Color(0x2289F336),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const IconThemeData(color: Color(0xFF7B6CF6));
+          return const IconThemeData(color: Color(0xFF89F336));
         }
         return const IconThemeData(color: Color(0xFF8A8FA8));
       }),
@@ -201,11 +201,11 @@ class _NotificationToastWrapper extends StatelessWidget {
   Color _colorFor(String type) {
     switch (type) {
       case 'package_delivered':
-      case 'delivery_approved': return const Color(0xFF22C55E);
+      case 'delivery_approved': return const Color(0xFF89F336);
       case 'chat_message':
       case 'chat_accepted':
-      case 'chat_request':     return const Color(0xFF7B6CF6);
-      default:                 return const Color(0xFFFF5A1F);
+      case 'chat_request':     return const Color(0xFF89F336);
+      default:                 return const Color(0xFF89F336);
     }
   }
 
@@ -307,7 +307,7 @@ class _ToastCardState extends State<_ToastCard> with SingleTickerProviderStateMi
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: dark ? const Color(0xFF1B1F26) : Colors.white,
+                color: dark ? const Color(0xFF2C2C2C) : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: c.withOpacity(0.4), width: 1.5),
                 boxShadow: [
@@ -326,7 +326,7 @@ class _ToastCardState extends State<_ToastCard> with SingleTickerProviderStateMi
                   Text(
                     widget.notification.title ?? 'Notification',
                     style: TextStyle(
-                      color: dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E),
+                      color: dark ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A),
                       fontWeight: FontWeight.w700, fontSize: 14),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),

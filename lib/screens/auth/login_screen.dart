@@ -8,11 +8,11 @@ import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
-const Color _bg      = Color(0xFF101216);
-const Color _bgTop   = Color(0xFF171A20);
-const Color _card    = Color(0xFF1B1F26);
-const Color _soft    = Color(0xFF252A33);
-const Color _accent  = Color(0xFFFF5A1F);
+const Color _bg      = Color(0xFF1E1E1E);
+const Color _bgTop   = Color(0xFF1A1A1A);
+const Color _card    = Color(0xFF2C2C2C);
+const Color _soft    = Color(0xFF3A3A3A);
+const Color _accent  = Color(0xFF89F336);
 const Color _textPri = Color(0xFFF5F7FA);
 const Color _textSec = Color(0xFF98A1AE);
 const Color _border  = Color(0x14FFFFFF);
@@ -156,8 +156,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     width: double.infinity, padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0x22FF5A1F), borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0x44FF5A1F))),
+                      color: const Color(0x2289F336), borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0x4489F336))),
                     child: Row(children: [
                       const Icon(Icons.warning_amber_rounded, color: _accent, size: 16),
                       const SizedBox(width: 8),
@@ -226,7 +226,7 @@ class _Field extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: _border)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Color(0x55FF5A1F))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Color(0x5589F336))),
       errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Colors.redAccent)),
       focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: Colors.redAccent)),
     ),
@@ -287,7 +287,7 @@ class _SlideButton extends StatelessWidget {
             },
             child: Container(width: ks, height: ks,
               decoration: const BoxDecoration(color: _accent, shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Color(0x66FF5A1F), blurRadius: 16, offset: Offset(0, 6))]),
+                boxShadow: [BoxShadow(color: Color(0x6689F336), blurRadius: 16, offset: Offset(0, 6))]),
               child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 24)),
           )),
       ]));

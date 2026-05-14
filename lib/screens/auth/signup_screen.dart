@@ -7,15 +7,15 @@ import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
-Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E);
+Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
 Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
-Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF252A33) : const Color(0xFFF0F1F8);
-Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF1B1F26) : const Color(0xFFFFFFFF);
-Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF101216) : const Color(0xFFF2F3F8);
+Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFFF0F1F8);
+Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : const Color(0xFFFFFFFF);
+Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8);
 Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14FFFFFF) : const Color(0xFFE5E7EB);
 
-const Color _purple = Color(0xFF7B6CF6);
-const Color _orange = Color(0xFFFF5A1F);
+const Color _purple = Color(0xFF89F336);
+const Color _orange = Color(0xFF89F336);
 
 class _VehicleData {
   final String id, label, emoji, description;

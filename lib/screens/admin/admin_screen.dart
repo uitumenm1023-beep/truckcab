@@ -7,9 +7,9 @@ import '../../providers/payment_provider.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
 
-const _purple = Color(0xFF7B6CF6);
-const _orange = Color(0xFFFF5A1F);
-const _green  = Color(0xFF22C55E);
+const _purple = Color(0xFF89F336);
+const _orange = Color(0xFF89F336);
+const _green  = Color(0xFF89F336);
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -95,12 +95,12 @@ class _AdminScreenState extends State<AdminScreen>
   @override
   Widget build(BuildContext context) {
     final dark    = _isDark(context);
-    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E);
+    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
     final textSec = dark ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
-    final card    = dark ? const Color(0xFF1B1F26) : Colors.white;
+    final card    = dark ? const Color(0xFF2C2C2C) : Colors.white;
     final border  = dark ? const Color(0x14FFFFFF) : const Color(0xFFE5E7EB);
-    final bg      = dark ? const Color(0xFF101216) : const Color(0xFFF2F3F8);
-    final soft    = dark ? const Color(0xFF252A33) : const Color(0xFFF0F1F8);
+    final bg      = dark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8);
+    final soft    = dark ? const Color(0xFF3A3A3A) : const Color(0xFFF0F1F8);
 
     final provider   = context.watch<PaymentProvider>();
     final allPay     = provider.allPayments;

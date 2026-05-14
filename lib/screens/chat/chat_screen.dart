@@ -6,16 +6,16 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
-Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E);
+Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
 Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
-Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF252A33) : const Color(0xFFF0F1F8);
-Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF1B1F26) : const Color(0xFFFFFFFF);
-Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF101216) : const Color(0xFFF2F3F8);
+Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFFF0F1F8);
+Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : const Color(0xFFFFFFFF);
+Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8);
 Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14FFFFFF) : const Color(0xFFE5E7EB);
 
-const Color _purple = Color(0xFF7B6CF6);
-const Color _orange = Color(0xFFFF5A1F);
-const Color _green  = Color(0xFF22C55E);
+const Color _purple = Color(0xFF89F336);
+const Color _orange = Color(0xFF89F336);
+const Color _green  = Color(0xFF89F336);
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -156,7 +156,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: dark ? const Color(0xFF1C1630) : const Color(0xFFEDE9FE),
+                    color: dark ? const Color(0xFF252525) : const Color(0xFFE5FFD0),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(color: _purple.withOpacity(0.25)),
                   ),

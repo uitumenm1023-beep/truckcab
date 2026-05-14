@@ -15,19 +15,19 @@ import '../map/map_picker_screen.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
 Color _textPri(BuildContext ctx) =>
-    _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A1A2E);
+    _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
 Color _textSec(BuildContext ctx) =>
     _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
 Color _card(BuildContext ctx) =>
-    _isDark(ctx) ? const Color(0xFF1B1F26) : Colors.white;
+    _isDark(ctx) ? const Color(0xFF2C2C2C) : Colors.white;
 Color _soft(BuildContext ctx) =>
-    _isDark(ctx) ? const Color(0xFF252A33) : const Color(0xFFF0F1F8);
+    _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFFF0F1F8);
 Color _border(BuildContext ctx) =>
     _isDark(ctx) ? const Color(0x14FFFFFF) : const Color(0xFFE5E7EB);
 
-const _purple = Color(0xFF7B6CF6);
-const _orange = Color(0xFFFF5A1F);
-const _green  = Color(0xFF22C55E);
+const _purple = Color(0xFF89F336);
+const _orange = Color(0xFF89F336);
+const _green  = Color(0xFF89F336);
 
 class CreateOrderScreen extends StatefulWidget {
   const CreateOrderScreen({super.key});
@@ -232,7 +232,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final dark = _isDark(context);
 
     return Scaffold(
-      backgroundColor: dark ? const Color(0xFF101216) : const Color(0xFFF2F3F8),
+      backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8),
       appBar: AppBar(
         title: Text('New Delivery Order',
           style: TextStyle(
