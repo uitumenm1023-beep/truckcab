@@ -42,16 +42,17 @@ post_install do |installer|
       # FIX: Add abseil header search path so gRPC-Core can find absl/strings/string_view.h
       # This fixes the fatal error: 'absl/strings/string_view.h' file not found
       pods_root = installer.sandbox.root.to_s
-      abseil_path = "#{pods_root}/abseil"
+      abseil_path     = "#{pods_root}/abseil"
+      boring_ssl_path = "#{pods_root}/BoringSSL-GRPC/src/include"
+      extra_paths = [abseil_path, boring_ssl_path]
+
       existing = config.build_settings['HEADER_SEARCH_PATHS'] || '$(inherited)'
       if existing.is_a?(Array)
-        unless existing.include?(abseil_path)
-          config.build_settings['HEADER_SEARCH_PATHS'] = existing + [abseil_path]
-        end
+        paths_to_add = extra_paths.reject { |p| existing.include?(p) }
+        config.build_settings['HEADER_SEARCH_PATHS'] = existing + paths_to_add unless paths_to_add.empty?
       else
-        unless existing.include?(abseil_path)
-          config.build_settings['HEADER_SEARCH_PATHS'] = "#{existing} #{abseil_path}"
-        end
+        paths_to_add = extra_paths.reject { |p| existing.include?(p) }
+        config.build_settings['HEADER_SEARCH_PATHS'] = "#{existing} #{paths_to_add.join(' ')}" unless paths_to_add.empty?
       end
 
       # Remove -G flag from all targets

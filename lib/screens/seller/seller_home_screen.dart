@@ -678,40 +678,6 @@ class _ProfileTab extends StatelessWidget {
               () => Navigator.pushNamed(context, AppRoutes.admin),
               valueColor: _orange),
           ],
-          // TEMPORARY — remove after tapping once
-          if (!isAdmin) ...[
-            const SizedBox(height: 10),
-            Builder(builder: (ctx) {
-              final uid = ctx.watch<AppAuthProvider>().currentUserId ?? '';
-              return GestureDetector(
-                onTap: () async {
-                  if (uid.isEmpty) return;
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(uid)
-                      .update({'isAdmin': true});
-                  if (!ctx.mounted) return;
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(content: Text('Admin enabled — please restart the app')));
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: _purple.withOpacity(0.4))),
-                  child: Row(children: [
-                    const Icon(Icons.lock_open_rounded, color: _purple, size: 20),
-                    const SizedBox(width: 14),
-                    Text('Become Admin (tap once)',
-                      style: TextStyle(color: _textPri(ctx), fontWeight: FontWeight.w600, fontSize: 14)),
-                    const Spacer(),
-                    Icon(Icons.chevron_right, color: _textSec(ctx), size: 18),
-                  ]),
-                ),
-              );
-            }),
-          ],
           const SizedBox(height: 28),
           GestureDetector(
             onTap: onLogout,
