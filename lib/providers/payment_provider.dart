@@ -106,8 +106,8 @@ class PaymentProvider extends ChangeNotifier {
       await _svc.approvePayment(
           paymentId: paymentId, userId: userId, adminId: adminId);
       return true;
-    } catch (_) {
-      _errorMessage = 'Failed to approve payment';
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
       return false;
     } finally {
       _isLoading = false;

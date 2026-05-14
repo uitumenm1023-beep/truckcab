@@ -627,6 +627,22 @@ class _OrderDetailSheet extends StatelessWidget {
   final Future<void> Function(OrderModel) onSendRequest;
   const _OrderDetailSheet({required this.order, required this.onSendRequest});
 
+  Future<Map<String, String>> _fetchSellerInfo() async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(order.sellerId).get();
+      final data = doc.data() ?? {};
+      final name  = (data['name'] ?? '').toString().trim();
+      final email = (data['email'] ?? '').toString().trim();
+      final phone = (data['phoneNumber'] ?? '').toString().trim();
+      return {
+        'name':  name.isNotEmpty ? name : (order.sellerName.isNotEmpty ? order.sellerName : email),
+        'phone': phone,
+      };
+    } catch (_) {
+      return {'name': order.sellerName, 'phone': ''};
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dark = _isDark(context);
@@ -664,7 +680,46 @@ class _OrderDetailSheet extends StatelessWidget {
                     child: Text('₮${order.price.toStringAsFixed(0)}',
                       style: const TextStyle(color: _green, fontSize: 20, fontWeight: FontWeight.w800))),
                 ]),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+
+                // Seller info
+                FutureBuilder<Map<String, String>>(
+                  future: _fetchSellerInfo(),
+                  builder: (ctx, snap) {
+                    final name  = snap.data?['name'] ?? order.sellerName;
+                    final phone = snap.data?['phone'] ?? '';
+                    return Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: dark ? const Color(0xFF252A33) : const Color(0xFFF0F1F8),
+                        borderRadius: BorderRadius.circular(16)),
+                      child: Row(children: [
+                        Container(
+                          width: 40, height: 40,
+                          decoration: BoxDecoration(color: _purple.withOpacity(0.12), shape: BoxShape.circle),
+                          child: Center(child: Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : 'S',
+                            style: const TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 18)))),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(name.isNotEmpty ? name : 'Seller',
+                            style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 14)),
+                          if (phone.isNotEmpty)
+                            Text(phone,
+                              style: TextStyle(color: _textSec(context), fontSize: 12)),
+                        ])),
+                        if (phone.isNotEmpty)
+                          GestureDetector(
+                            onTap: () => launchUrl(Uri.parse('tel:$phone')),
+                            child: Container(
+                              width: 38, height: 38,
+                              decoration: BoxDecoration(color: _green.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                              child: const Icon(Icons.phone_rounded, color: _green, size: 18))),
+                      ]),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
 
                 // Photos
                 if (order.imageUrls.isNotEmpty) ...[

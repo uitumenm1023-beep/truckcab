@@ -21,6 +21,9 @@ class UserModel {
   final DateTime? subscriptionExpiry;
   final bool isAdmin;
 
+  // Contact
+  final String phoneNumber;
+
   UserModel({
     required this.userId,
     required this.email,
@@ -37,6 +40,7 @@ class UserModel {
     this.crashCount = 0,
     this.subscriptionExpiry,
     this.isAdmin = false,
+    this.phoneNumber = '',
   });
 
   /// Returns name if set, otherwise email prefix.
@@ -66,6 +70,7 @@ class UserModel {
       crashCount: (data['crashCount'] as num?)?.toInt() ?? 0,
       subscriptionExpiry: (data['subscriptionExpiry'] as Timestamp?)?.toDate(),
       isAdmin: data['isAdmin'] == true,
+      phoneNumber: (data['phoneNumber'] ?? '').toString(),
     );
   }
 
@@ -93,6 +98,7 @@ class UserModel {
           ? Timestamp.fromDate(subscriptionExpiry!)
           : null,
       'isAdmin': isAdmin,
+      'phoneNumber': phoneNumber,
       'lastSeen': lastSeen != null
           ? Timestamp.fromDate(lastSeen!)
           : FieldValue.serverTimestamp(),
@@ -121,6 +127,7 @@ class UserModel {
     int? crashCount,
     DateTime? subscriptionExpiry,
     bool? isAdmin,
+    String? phoneNumber,
   }) {
     return UserModel(
       userId: userId ?? this.userId,
@@ -138,6 +145,7 @@ class UserModel {
       crashCount: crashCount ?? this.crashCount,
       subscriptionExpiry: subscriptionExpiry ?? this.subscriptionExpiry,
       isAdmin: isAdmin ?? this.isAdmin,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
     );
   }
 }

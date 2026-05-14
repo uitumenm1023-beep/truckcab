@@ -181,6 +181,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final authProvider  = context.read<AppAuthProvider>();
     final orderProvider = context.read<OrderProvider>();
     final sellerId      = authProvider.currentUserId ?? '';
+    final sellerName    = authProvider.currentUserProfile?.displayName ?? '';
 
     // Upload photos first if any
     List<String> imageUrls = [];
@@ -199,6 +200,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
     final success = await orderProvider.createOrder(
       sellerId:        sellerId,
+      sellerName:      sellerName,
       pickupLocation:  _pickupAddress,
       dropoffLocation: _dropoffAddress,
       description:     _descCtrl.text.trim(),

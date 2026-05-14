@@ -48,7 +48,12 @@ class _AdminScreenState extends State<AdminScreen>
     final ok = await context.read<PaymentProvider>().approvePayment(
       paymentId: p.id, userId: p.userId, adminId: adminId);
     if (!mounted) return;
-    _snack(ok ? '✓ Approved — user gets 30 days' : 'Failed to approve');
+    if (ok) {
+      _snack('✓ Approved — user gets 30 days');
+    } else {
+      final err = context.read<PaymentProvider>().errorMessage ?? 'Failed to approve';
+      _snack('Error: $err');
+    }
   }
 
   Future<void> _reject(PaymentModel p) async {

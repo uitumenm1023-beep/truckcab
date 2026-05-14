@@ -65,26 +65,32 @@ class PaymentService {
     required String userId,
     required String adminId,
   }) async {
-    final batch = _fs.batch();
+    if (userId.isEmpty) throw Exception('Payment has no associated user ID');
 
     final expiry = DateTime.now().add(const Duration(days: 30));
 
-    batch.update(_payments.doc(paymentId), {
-      'status': 'approved',
-      'processedAt': FieldValue.serverTimestamp(),
-      'processedBy': adminId,
-    });
+    try {
+      final batch = _fs.batch();
 
-    batch.set(
-      _fs.collection('users').doc(userId),
-      {
-        'subscriptionExpiry': Timestamp.fromDate(expiry),
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+      batch.update(_payments.doc(paymentId), {
+        'status': 'approved',
+        'processedAt': FieldValue.serverTimestamp(),
+        'processedBy': adminId,
+      });
 
-    await batch.commit();
+      batch.update(
+        _fs.collection('users').doc(userId),
+        {
+          'subscriptionExpiry': Timestamp.fromDate(expiry),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      );
+
+      await batch.commit();
+    } catch (e, st) {
+      debugPrint('approvePayment error: $e\n$st');
+      rethrow;
+    }
   }
 
   /// Admin rejects a payment with an optional note.

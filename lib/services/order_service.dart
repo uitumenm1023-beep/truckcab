@@ -16,6 +16,7 @@ class OrderService {
 
   Future<void> createOrder({
     required String sellerId,
+    required String sellerName,
     required String pickupLocation,
     required String dropoffLocation,
     required String description,
@@ -29,6 +30,7 @@ class OrderService {
     try {
       await _ordersRef.add({
         'sellerId': sellerId,
+        'sellerName': sellerName,
         'driverId': null,
         'pickupLocation': pickupLocation.trim(),
         'dropoffLocation': dropoffLocation.trim(),

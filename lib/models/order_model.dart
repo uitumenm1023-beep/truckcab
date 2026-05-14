@@ -17,6 +17,8 @@ class OrderModel {
   final double? dropoffLng;
   // Photo URLs uploaded by seller
   final List<String> imageUrls;
+  // Denormalized seller display name (empty for old orders — fetch from users collection)
+  final String sellerName;
 
   OrderModel({
     required this.id,
@@ -33,6 +35,7 @@ class OrderModel {
     this.dropoffLat,
     this.dropoffLng,
     this.imageUrls = const [],
+    this.sellerName = '',
   });
 
   factory OrderModel.fromFirestore(DocumentSnapshot doc) {
@@ -53,6 +56,7 @@ class OrderModel {
       dropoffLat: (data['dropoffLat'] as num?)?.toDouble(),
       dropoffLng: (data['dropoffLng'] as num?)?.toDouble(),
       imageUrls: List<String>.from(data['imageUrls'] ?? []),
+      sellerName: (data['sellerName'] ?? '').toString(),
     );
   }
 
@@ -73,6 +77,7 @@ class OrderModel {
       if (dropoffLat != null) 'dropoffLat': dropoffLat,
       if (dropoffLng != null) 'dropoffLng': dropoffLng,
       'imageUrls': imageUrls,
+      'sellerName': sellerName,
     };
   }
 
@@ -91,6 +96,7 @@ class OrderModel {
     double? dropoffLat,
     double? dropoffLng,
     List<String>? imageUrls,
+    String? sellerName,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -107,6 +113,7 @@ class OrderModel {
       dropoffLat: dropoffLat ?? this.dropoffLat,
       dropoffLng: dropoffLng ?? this.dropoffLng,
       imageUrls: imageUrls ?? this.imageUrls,
+      sellerName: sellerName ?? this.sellerName,
     );
   }
 }
