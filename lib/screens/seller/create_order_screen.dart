@@ -1,8 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
@@ -133,16 +134,30 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  // ── Upload photos to Firebase Storage ─────────────────────────────────────
+  // ── Upload photos to ImgBB (free, no Firebase Storage needed) ────────────
+  // 1. Sign up free at imgbb.com
+  // 2. Get your API key at api.imgbb.com
+  // 3. Paste it below
+  static const _imgbbApiKey = '35b1056c3dd1a26c0ef5cea7e7d266cc';
+
   Future<List<String>> _uploadPhotos(String orderId) async {
     final urls = <String>[];
-    for (int i = 0; i < _photos.length; i++) {
-      final file = File(_photos[i].path);
-      final ext  = _photos[i].path.split('.').last;
-      final ref  = FirebaseStorage.instance
-          .ref('order_photos/$orderId/photo_$i.$ext');
-      await ref.putFile(file);
-      urls.add(await ref.getDownloadURL());
+    for (final photo in _photos) {
+      final bytes  = await photo.readAsBytes();
+      final base64 = base64Encode(bytes);
+
+      final response = await http.post(
+        Uri.parse('https://api.imgbb.com/1/upload?key=$_imgbbApiKey'),
+        body: {'image': base64},
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final url  = json['data']['url'] as String;
+        urls.add(url);
+      } else {
+        throw Exception('ImgBB upload failed: ${response.statusCode}');
+      }
     }
     return urls;
   }
