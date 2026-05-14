@@ -108,12 +108,12 @@ class _AppLifecycleGateState extends State<_AppLifecycleGate> with WidgetsBindin
   static final _light = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    scaffoldBackgroundColor: const Color(0xFFF2F3F8),
+    scaffoldBackgroundColor: const Color(0xFF93B1B5),
     fontFamily: 'Roboto',
     colorScheme: const ColorScheme.light(
       primary: Color(0xFF89F336),
       secondary: Color(0xFF89F336),
-      surface: Color(0xFFFFFFFF),
+      surface: Color(0xFFB5CDD0),
       error: Colors.redAccent,
     ),
     splashColor: const Color(0x1A89F336),
@@ -121,19 +121,19 @@ class _AppLifecycleGateState extends State<_AppLifecycleGate> with WidgetsBindin
     hoverColor: const Color(0x1A89F336),
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
-      foregroundColor: Color(0xFF4A4A4A),
+      foregroundColor: Color(0xFF1A2B2D),
       elevation: 0,
       centerTitle: false,
-      titleTextStyle: TextStyle(color: Color(0xFF4A4A4A), fontSize: 24, fontWeight: FontWeight.w500),
+      titleTextStyle: TextStyle(color: Color(0xFF1A2B2D), fontSize: 24, fontWeight: FontWeight.w500),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: const Color(0xFFFFFFFF),
+      backgroundColor: const Color(0xFF4F7C82),
       indicatorColor: const Color(0x2289F336),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
           return const IconThemeData(color: Color(0xFF89F336));
         }
-        return const IconThemeData(color: Color(0xFF8A8FA8));
+        return const IconThemeData(color: Color(0xFF2A4A50));
       }),
     ),
   );
@@ -307,7 +307,7 @@ class _ToastCardState extends State<_ToastCard> with SingleTickerProviderStateMi
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: dark ? const Color(0xFF2C2C2C) : Colors.white,
+                color: dark ? const Color(0xFF2C2C2C) : const Color(0xFFB5CDD0),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: c.withOpacity(0.4), width: 1.5),
                 boxShadow: [
@@ -326,13 +326,13 @@ class _ToastCardState extends State<_ToastCard> with SingleTickerProviderStateMi
                   Text(
                     widget.notification.title ?? 'Notification',
                     style: TextStyle(
-                      color: dark ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A),
+                      color: dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D),
                       fontWeight: FontWeight.w700, fontSize: 14),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),
                   Text(
                     widget.notification.message ?? '',
-                    style: TextStyle(color: dark ? const Color(0xFF98A1AE) : const Color(0xFF6B7280), fontSize: 12),
+                    style: TextStyle(color: dark ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50), fontSize: 12),
                     maxLines: 2, overflow: TextOverflow.ellipsis),
                 ])),
                 const SizedBox(width: 8),

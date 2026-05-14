@@ -8,15 +8,15 @@ import '../../routes/app_routes.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
 Color _textPri(BuildContext ctx) =>
-    _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
+    _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
 Color _textSec(BuildContext ctx) =>
-    _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
+    _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
 Color _card(BuildContext ctx) =>
-    _isDark(ctx) ? const Color(0xFF2C2C2C) : const Color(0xFFFFFFFF);
+    _isDark(ctx) ? const Color(0xFF2C2C2C) : const Color(0xFFB5CDD0);
 Color _unreadBg(BuildContext ctx) =>
     _isDark(ctx) ? const Color(0xFF252525) : const Color(0xFFF5F3FF);
 Color _border(BuildContext ctx) =>
-    _isDark(ctx) ? const Color(0x14FFFFFF) : const Color(0xFFE5E7EB);
+    _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
 
 const _purple = Color(0xFF89F336);
 const _orange = Color(0xFF89F336);
@@ -116,7 +116,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final dark = _isDark(context);
 
     return Scaffold(
-      backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8),
+      backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5),
       appBar: AppBar(
         title: Text('Notifications',
           style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 22)),

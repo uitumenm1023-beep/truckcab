@@ -15,7 +15,7 @@ const Color _soft    = Color(0xFF3A3A3A);
 const Color _accent  = Color(0xFF89F336);
 const Color _textPri = Color(0xFFF5F7FA);
 const Color _textSec = Color(0xFF98A1AE);
-const Color _border  = Color(0x14FFFFFF);
+const Color _border  = Color(0x14B5CDD0);
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

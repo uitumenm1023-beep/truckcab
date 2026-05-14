@@ -226,8 +226,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final dark    = _isDark(context);
-    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A);
-    final textSec = dark ? const Color(0xFF98A1AE) : const Color(0xFF6B7280);
+    final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
+    final textSec = dark ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
     final cardBg  = dark ? const Color(0xFF2C2C2C) : Colors.white;
     final destColor = widget.isPickup ? _green : _orange;
 
@@ -397,7 +397,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   Widget _buildLocating(bool dark, Color textPri, Color textSec) {
     final cardBg = dark ? const Color(0xFF2C2C2C) : Colors.white;
     return Scaffold(
-      backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8),
+      backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5),
       appBar: AppBar(
         title: Text(_destLabel,
           style: TextStyle(color: textPri, fontWeight: FontWeight.w700)),
@@ -481,7 +481,7 @@ class _TopBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: dark
                     ? const Color(0xFF3A3A3A)
-                    : const Color(0xFFF0F1F8),
+                    : const Color(0xFF7FA3A7),
                 shape: BoxShape.circle),
               child: Icon(Icons.arrow_back_rounded,
                 color: textPri, size: 20)),
@@ -516,7 +516,7 @@ class _TopBar extends StatelessWidget {
             ? LinearProgressIndicator(
                 color: const Color(0xFF3B82F6),
                 backgroundColor:
-                    dark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E7EB),
+                    dark ? const Color(0xFF3A3A3A) : const Color(0xFF5E8A8F),
                 minHeight: 3)
             : Row(children: [
                 _Pill(Icons.straighten_rounded, distText,
@@ -587,7 +587,7 @@ class _BottomBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: dark
                   ? const Color(0xFF3A3A3A)
-                  : const Color(0xFFF0F1F8),
+                  : const Color(0xFF7FA3A7),
               borderRadius: BorderRadius.circular(16)),
             child: const Icon(Icons.my_location_rounded,
               color: Color(0xFF3B82F6), size: 24)),
@@ -601,7 +601,7 @@ class _BottomBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: dark
                   ? const Color(0xFF3A3A3A)
-                  : const Color(0xFFF0F1F8),
+                  : const Color(0xFF7FA3A7),
               borderRadius: BorderRadius.circular(16)),
             child: Row(mainAxisAlignment: MainAxisAlignment.center,
               children: [

@@ -96,7 +96,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F3F8),
+      backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5),
       body: Center(
         child: FadeTransition(
           opacity: _fade,
@@ -116,11 +116,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             const SizedBox(height: 24),
             Text('TruckCab',
               style: TextStyle(
-                color: dark ? const Color(0xFFF5F7FA) : const Color(0xFF4A4A4A),
+                color: dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D),
                 fontSize: 34, fontWeight: FontWeight.w300, letterSpacing: 1.5)),
             const SizedBox(height: 6),
             Text('Delivering On Time',
-              style: TextStyle(color: dark ? const Color(0xFF98A1AE) : const Color(0xFF6B7280), fontSize: 14)),
+              style: TextStyle(color: dark ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50), fontSize: 14)),
             const SizedBox(height: 48),
             SizedBox(width: 28, height: 28,
               child: CircularProgressIndicator(
