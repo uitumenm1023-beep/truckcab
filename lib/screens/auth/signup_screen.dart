@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _accent(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
 Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
 Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7);
@@ -14,8 +15,6 @@ Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : con
 Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5);
 Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
 
-const Color _purple = Color(0xFF89F336);
-const Color _orange = Color(0xFF89F336);
 
 class _VehicleData {
   final String id, label, emoji, description;
@@ -142,8 +141,8 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
         backgroundColor: _card(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Column(children: [
-          Container(width: 56, height: 56, decoration: BoxDecoration(color: _purple.withOpacity(0.15), shape: BoxShape.circle),
-            child: const Icon(Icons.mark_email_unread_outlined, color: _purple, size: 28)),
+          Container(width: 56, height: 56, decoration: BoxDecoration(color: _accent(context).withOpacity(0.15), shape: BoxShape.circle),
+            child: Icon(Icons.mark_email_unread_outlined, color: _accent(context), size: 28)),
           const SizedBox(height: 14),
           Text('Verify Your Email', style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 18)),
         ]),
@@ -152,7 +151,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
         actions: [
           TextButton(
             onPressed: () { Navigator.pop(ctx); Navigator.pushReplacementNamed(context, AppRoutes.login); },
-            child: const Text('Go to Login', style: TextStyle(color: _purple, fontWeight: FontWeight.w700))),
+            child: Text('Go to Login', style: TextStyle(color: _accent(context), fontWeight: FontWeight.w700))),
         ],
       ),
     );
@@ -162,6 +161,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final dark = _isDark(context);
     return Scaffold(
       backgroundColor: _bg(context),
@@ -179,7 +179,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
               ),
               const Spacer(),
               Container(width: 38, height: 38,
-                decoration: BoxDecoration(color: _orange, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
                 child: const Icon(Icons.local_shipping_outlined, color: Colors.white, size: 20)),
             ]),
           ),
@@ -190,7 +190,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
               Row(children: List.generate(_totalSteps, (i) => Expanded(child: Container(
                 height: 4, margin: const EdgeInsets.only(right: 4),
                 decoration: BoxDecoration(
-                  color: i <= _step ? _purple : _soft(context),
+                  color: i <= _step ? accent : _soft(context),
                   borderRadius: BorderRadius.circular(2)),
               )))),
               const SizedBox(height: 10),
@@ -214,9 +214,9 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                 duration: const Duration(milliseconds: 200),
                 height: 56,
                 decoration: BoxDecoration(
-                  color: _submitting ? _purple.withOpacity(0.5) : _purple,
+                  color: _submitting ? accent.withOpacity(0.5) : accent,
                   borderRadius: BorderRadius.circular(18),
-                  boxShadow: _submitting ? [] : [BoxShadow(color: _purple.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))],
+                  boxShadow: _submitting ? [] : [BoxShadow(color: accent.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))],
                 ),
                 child: Center(child: _submitting
                     ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
@@ -278,7 +278,7 @@ class _StepRole extends StatelessWidget {
         Text('Already have an account? ', style: TextStyle(color: _textSec(context), fontSize: 13)),
         GestureDetector(
           onTap: () => Navigator.pushReplacementNamed(ctx, AppRoutes.login),
-          child: const Text('Login', style: TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 13))),
+          child: Text('Login', style: TextStyle(color: _accent(context), fontWeight: FontWeight.w700, fontSize: 13))),
       ]),
     ]);
   }
@@ -293,29 +293,32 @@ class _RoleCard extends StatelessWidget {
     required this.selected, required this.onTap, required this.context});
 
   @override
-  Widget build(BuildContext ctx) => GestureDetector(
-    onTap: onTap,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: selected ? _purple.withOpacity(0.1) : _card(context),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: selected ? _purple : _border(context), width: selected ? 2 : 1)),
-      child: Row(children: [
-        Container(width: 58, height: 58,
-          decoration: BoxDecoration(color: selected ? _purple.withOpacity(0.15) : _soft(context), borderRadius: BorderRadius.circular(16)),
-          child: Center(child: Text(emoji, style: const TextStyle(fontSize: 28)))),
-        const SizedBox(width: 16),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: TextStyle(color: selected ? _purple : _textPri(context), fontSize: 18, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(subtitle, style: TextStyle(color: _textSec(context), fontSize: 13)),
-        ])),
-        if (selected) const Icon(Icons.check_circle_rounded, color: _purple, size: 24),
-      ]),
-    ),
-  );
+  Widget build(BuildContext ctx) {
+    final accent = _accent(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: selected ? accent.withOpacity(0.1) : _card(context),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: selected ? accent : _border(context), width: selected ? 2 : 1)),
+        child: Row(children: [
+          Container(width: 58, height: 58,
+            decoration: BoxDecoration(color: selected ? accent.withOpacity(0.15) : _soft(context), borderRadius: BorderRadius.circular(16)),
+            child: Center(child: Text(emoji, style: const TextStyle(fontSize: 28)))),
+          const SizedBox(width: 16),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: TextStyle(color: selected ? accent : _textPri(context), fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(subtitle, style: TextStyle(color: _textSec(context), fontSize: 13)),
+          ])),
+          if (selected) Icon(Icons.check_circle_rounded, color: accent, size: 24),
+        ]),
+      ),
+    );
+  }
 }
 
 // ── Step 1: Vehicle ───────────────────────────────────────────────────────────
@@ -327,6 +330,7 @@ class _StepVehicle extends StatelessWidget {
 
   @override
   Widget build(BuildContext ctx) {
+    final accent = _accent(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('Your Vehicle', style: TextStyle(color: _textPri(context), fontSize: 32, fontWeight: FontWeight.w700)),
       const SizedBox(height: 8),
@@ -344,16 +348,16 @@ class _StepVehicle extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: sel ? _purple.withOpacity(0.1) : _card(context),
+                color: sel ? accent.withOpacity(0.1) : _card(context),
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: sel ? _purple : _border(context), width: sel ? 2 : 1)),
+                border: Border.all(color: sel ? accent : _border(context), width: sel ? 2 : 1)),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Text(v.emoji, style: const TextStyle(fontSize: 42)),
-                  if (sel) const Icon(Icons.check_circle_rounded, color: _purple, size: 20),
+                  if (sel) Icon(Icons.check_circle_rounded, color: accent, size: 20),
                 ]),
                 const Spacer(),
-                Text(v.label, style: TextStyle(color: sel ? _purple : _textPri(context), fontSize: 15, fontWeight: FontWeight.w700)),
+                Text(v.label, style: TextStyle(color: sel ? accent : _textPri(context), fontSize: 15, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
                 Text(v.description, style: TextStyle(color: _textSec(context), fontSize: 11, height: 1.4)),
               ]),
@@ -379,6 +383,7 @@ class _StepExperience extends StatelessWidget {
 
   @override
   Widget build(BuildContext ctx) {
+    final accent = _accent(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('Experience', style: TextStyle(color: _textPri(context), fontSize: 32, fontWeight: FontWeight.w700)),
       const SizedBox(height: 8),
@@ -394,15 +399,15 @@ class _StepExperience extends StatelessWidget {
             Text('Years of Experience', style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 15)),
             const Spacer(),
             Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: _purple.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-              child: Text('$years yr${years != 1 ? 's' : ''}', style: const TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 14))),
+              decoration: BoxDecoration(color: accent.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+              child: Text('$years yr${years != 1 ? 's' : ''}', style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 14))),
           ]),
           const SizedBox(height: 12),
           SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: _purple, thumbColor: _purple,
-              inactiveTrackColor: _purple.withOpacity(0.15),
-              overlayColor: _purple.withOpacity(0.12)),
+              activeTrackColor: accent, thumbColor: accent,
+              inactiveTrackColor: accent.withOpacity(0.15),
+              overlayColor: accent.withOpacity(0.12)),
             child: Slider(
               value: years.toDouble(), min: 0, max: 30, divisions: 30,
               onChanged: (v) => onYears(v.round())),
@@ -432,16 +437,16 @@ class _StepExperience extends StatelessWidget {
             const SizedBox(height: 8),
             SliderTheme(
               data: SliderThemeData(
-                activeTrackColor: _orange, thumbColor: _orange,
-                inactiveTrackColor: _orange.withOpacity(0.15),
-                overlayColor: _orange.withOpacity(0.12)),
+                activeTrackColor: accent, thumbColor: accent,
+                inactiveTrackColor: accent.withOpacity(0.15),
+                overlayColor: accent.withOpacity(0.12)),
               child: Slider(
                 value: crashCount.toDouble(), min: 0, max: 10, divisions: 10,
                 label: '$crashCount',
                 onChanged: (v) => onCrashCount(v.round())),
             ),
             Center(child: Text('$crashCount accident${crashCount != 1 ? 's' : ''}',
-              style: TextStyle(color: _orange, fontWeight: FontWeight.w600, fontSize: 13))),
+              style: TextStyle(color: accent, fontWeight: FontWeight.w600, fontSize: 13))),
           ],
         ])),
     ]);
@@ -456,18 +461,21 @@ class _YesNo extends StatelessWidget {
   const _YesNo(this.label, this.sel, this.onTap, this.context);
 
   @override
-  Widget build(BuildContext ctx) => GestureDetector(
-    onTap: onTap,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      height: 42,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: sel ? _purple.withOpacity(0.12) : _soft(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: sel ? _purple : _border(context))),
-      child: Text(label, style: TextStyle(color: sel ? _purple : _textSec(context), fontWeight: FontWeight.w700, fontSize: 13))),
-  );
+  Widget build(BuildContext ctx) {
+    final accent = _accent(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 42,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: sel ? accent.withOpacity(0.12) : _soft(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: sel ? accent : _border(context))),
+        child: Text(label, style: TextStyle(color: sel ? accent : _textSec(context), fontWeight: FontWeight.w700, fontSize: 13))),
+    );
+  }
 }
 
 // ── Step 3: Basic Info ────────────────────────────────────────────────────────
@@ -508,7 +516,7 @@ class _StepInfo extends StatelessWidget {
               lastDate: DateTime.now().subtract(const Duration(days: 365 * 16)),
               builder: (ctx, child) => Theme(
                 data: Theme.of(ctx).copyWith(
-                  colorScheme: ColorScheme.fromSeed(seedColor: _purple, brightness: Theme.of(ctx).brightness)),
+                  colorScheme: ColorScheme.fromSeed(seedColor: _accent(context), brightness: Theme.of(ctx).brightness)),
                 child: child!),
             );
             if (picked != null) onBirthdate(picked);
@@ -517,9 +525,9 @@ class _StepInfo extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
               color: _soft(context), borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: birthdate == null ? _border(context) : _purple)),
+              border: Border.all(color: birthdate == null ? _border(context) : _accent(context))),
             child: Row(children: [
-              Icon(Icons.cake_outlined, color: birthdate == null ? _textSec(context) : _purple, size: 20),
+              Icon(Icons.cake_outlined, color: birthdate == null ? _textSec(context) : _accent(context), size: 20),
               const SizedBox(width: 12),
               Expanded(child: Text(
                 birthdate == null ? 'Date of Birth' :
@@ -549,10 +557,10 @@ class _StepInfo extends StatelessWidget {
         ],
         const SizedBox(height: 20),
         Container(padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: _purple.withOpacity(0.08), borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _purple.withOpacity(0.2))),
+          decoration: BoxDecoration(color: _accent(context).withOpacity(0.08), borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _accent(context).withOpacity(0.2))),
           child: Row(children: [
-            const Icon(Icons.info_outline, color: _purple, size: 18),
+            Icon(Icons.info_outline, color: _accent(context), size: 18),
             const SizedBox(width: 10),
             Expanded(child: Text('A verification email will be sent. The app will log you in automatically once verified.',
               style: TextStyle(color: _textSec(context), fontSize: 12, height: 1.4))),
@@ -597,7 +605,7 @@ class _Field extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide(color: _border(context))),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: const BorderSide(color: _purple, width: 1.5)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide(color: _accent(context), width: 1.5)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: const BorderSide(color: Colors.redAccent)),
         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
       ),

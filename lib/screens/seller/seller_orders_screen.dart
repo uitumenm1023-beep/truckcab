@@ -9,6 +9,7 @@ import '../../providers/order_provider.dart';
 import '../../routes/app_routes.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _accent(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
 Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
 Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7);
@@ -16,9 +17,6 @@ Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : con
 Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5);
 Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
 
-const Color _purple = Color(0xFF89F336);
-const Color _orange = Color(0xFF89F336);
-const Color _green  = Color(0xFF89F336);
 
 class SellerOrdersScreen extends StatefulWidget {
   const SellerOrdersScreen({super.key});
@@ -44,6 +42,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final orders = context.watch<OrderProvider>();
 
     return Scaffold(
@@ -60,7 +59,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
         title: Text('My Orders', style: TextStyle(color: _textPri(context), fontSize: 20, fontWeight: FontWeight.w700)),
       ),
       body: orders.isLoading
-          ? const Center(child: CircularProgressIndicator(color: _purple))
+          ? Center(child: CircularProgressIndicator(color: accent))
           : orders.sellerOrders.isEmpty
               ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.local_shipping_outlined, color: _textSec(context), size: 48),
@@ -83,13 +82,13 @@ class _OrderCard extends StatelessWidget {
   final OrderModel order;
   const _OrderCard({required this.order});
 
-  Color _sc() {
+  Color _sc(Color accent) {
     switch (order.status) {
       case AppStatus.open:      return const Color(0xFF2A4A50);
-      case AppStatus.accepted:  return _purple;
+      case AppStatus.accepted:  return accent;
       case AppStatus.pickedUp:  return const Color(0xFF3B82F6);
-      case AppStatus.onTheWay:  return _orange;
-      case AppStatus.delivered: return _green;
+      case AppStatus.onTheWay:  return accent;
+      case AppStatus.delivered: return accent;
       default: return const Color(0xFF2A4A50);
     }
   }
@@ -109,6 +108,7 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final hasDriver = order.driverId != null && order.driverId!.isNotEmpty;
     return Container(
       padding: const EdgeInsets.all(18),
@@ -120,8 +120,8 @@ class _OrderCard extends StatelessWidget {
             maxLines: 2, overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 10),
           Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: _sc().withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-            child: Text(_sl(), style: TextStyle(color: _sc(), fontSize: 11, fontWeight: FontWeight.w700))),
+            decoration: BoxDecoration(color: _sc(accent).withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+            child: Text(_sl(), style: TextStyle(color: _sc(accent), fontSize: 11, fontWeight: FontWeight.w700))),
         ]),
         const SizedBox(height: 12),
         Row(children: [
@@ -138,7 +138,7 @@ class _OrderCard extends StatelessWidget {
         const SizedBox(height: 10),
         Row(children: [
           Text('\$${order.price.toStringAsFixed(0)}',
-            style: const TextStyle(color: _green, fontWeight: FontWeight.w800, fontSize: 16)),
+            style: TextStyle(color: accent, fontWeight: FontWeight.w800, fontSize: 16)),
           const Spacer(),
           Text(hasDriver ? 'Driver assigned' : 'Awaiting driver', style: TextStyle(color: _textSec(context), fontSize: 12)),
         ]),
@@ -170,16 +170,17 @@ class _ChatSection extends StatelessWidget {
           stream: FirebaseFirestore.instance.collection('chats').doc(chatId).snapshots(),
           builder: (ctx2, cs) {
             if (!(cs.data?.exists ?? false)) return Text('Chat pending...', style: TextStyle(color: _textSec(context), fontSize: 12));
+            final accent = _accent(context);
             return GestureDetector(
               onTap: () => Navigator.pushNamed(context, AppRoutes.chatScreen,
                 arguments: ChatScreenArgs(chatId: chatId, title: order.description)),
               child: Container(height: 44, alignment: Alignment.center,
-                decoration: BoxDecoration(color: _purple.withOpacity(0.1), borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _purple.withOpacity(0.3))),
-                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.chat_bubble_outline, color: _purple, size: 16),
-                  SizedBox(width: 8),
-                  Text('Open Chat', style: TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 13)),
+                decoration: BoxDecoration(color: accent.withOpacity(0.1), borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: accent.withOpacity(0.3))),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.chat_bubble_outline, color: accent, size: 16),
+                  const SizedBox(width: 8),
+                  Text('Open Chat', style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 13)),
                 ])),
             );
           },

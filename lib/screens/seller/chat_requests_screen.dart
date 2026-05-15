@@ -6,6 +6,7 @@ import '../../providers/chat_provider.dart';
 import '../../routes/app_routes.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _accent(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
 Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
 Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7);
@@ -13,9 +14,6 @@ Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : con
 Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5);
 Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
 
-const Color _purple = Color(0xFF89F336);
-const Color _orange = Color(0xFF89F336);
-const Color _green  = Color(0xFF89F336);
 
 class ChatRequestsScreen extends StatefulWidget {
   const ChatRequestsScreen({super.key});
@@ -58,7 +56,7 @@ class _ChatRequestsScreenState extends State<ChatRequestsScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(ok ? 'Driver approved for delivery!' : (chat.errorMessage ?? 'Failed')),
-      backgroundColor: ok ? _green : Colors.redAccent,
+      backgroundColor: ok ? _accent(context) : Colors.redAccent,
     ));
   }
 
@@ -71,6 +69,7 @@ class _ChatRequestsScreenState extends State<ChatRequestsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final chat = context.watch<ChatProvider>();
 
     return Scaffold(
@@ -87,7 +86,7 @@ class _ChatRequestsScreenState extends State<ChatRequestsScreen> {
         title: Text('Delivery Requests', style: TextStyle(color: _textPri(context), fontSize: 20, fontWeight: FontWeight.w700)),
       ),
       body: chat.isLoading
-          ? const Center(child: CircularProgressIndicator(color: _purple))
+          ? Center(child: CircularProgressIndicator(color: accent))
           : chat.chatRequests.isEmpty
               ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.inbox_outlined, color: _textSec(context), size: 48),
@@ -118,10 +117,10 @@ class _ChatRequestsScreenState extends State<ChatRequestsScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
-                                color: status == 'pending' ? _orange.withOpacity(0.12) : _purple.withOpacity(0.12),
+                                color: accent.withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(10)),
                               child: Text(status == 'pending' ? 'Pending' : 'Chat Open',
-                                style: TextStyle(color: status == 'pending' ? _orange : _purple,
+                                style: TextStyle(color: accent,
                                   fontSize: 11, fontWeight: FontWeight.w700))),
                           ]),
                           const SizedBox(height: 12),
@@ -136,15 +135,15 @@ class _ChatRequestsScreenState extends State<ChatRequestsScreen> {
                           const SizedBox(height: 14),
                           if (status == 'pending') ...[
                             Row(children: [
-                              Expanded(child: _Btn('Accept & Chat', _purple, () => _openChat(doc.id, data))),
+                              Expanded(child: _Btn('Accept & Chat', accent, () => _openChat(doc.id, data))),
                               const SizedBox(width: 10),
                               Expanded(child: _OutlineBtn('Reject', Colors.redAccent, () => _reject(doc.id))),
                             ]),
                           ] else if (status == 'chat_open') ...[
                             Row(children: [
-                              Expanded(child: _Btn('Final Approve', _green, () => _finalApprove(doc.id, data))),
+                              Expanded(child: _Btn('Final Approve', accent, () => _finalApprove(doc.id, data))),
                               const SizedBox(width: 10),
-                              Expanded(child: _OutlineBtn('Open Chat', _purple, () {
+                              Expanded(child: _OutlineBtn('Open Chat', accent, () {
                                 Navigator.pushNamed(context, AppRoutes.chatScreen,
                                   arguments: ChatScreenArgs(chatId: doc.id, title: desc));
                               })),

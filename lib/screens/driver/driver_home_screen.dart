@@ -14,6 +14,7 @@ import '../../routes/app_routes.dart';
 import 'navigation_screen.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _accent(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
 Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
 Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7);
@@ -21,10 +22,6 @@ Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : con
 Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5);
 Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
 
-const Color _purple  = Color(0xFF89F336);
-const Color _purpleL = Color(0xFFE5FFD0);
-const Color _orange  = Color(0xFF89F336);
-const Color _green   = Color(0xFF89F336);
 
 // ── Open Google Maps navigation ───────────────────────────────────────────────
 Future<void> _openDirections({
@@ -180,6 +177,7 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final dark = _isDark(context);
     final bottomPad = MediaQuery.of(context).padding.bottom;
     const items = [
@@ -207,14 +205,14 @@ class _BottomNav extends StatelessWidget {
               duration: const Duration(milliseconds: 220),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: sel ? _purple.withOpacity(0.12) : Colors.transparent,
+                color: sel ? accent.withOpacity(0.12) : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(children: [
-                Icon(sel ? item.$1 : item.$2, color: sel ? _purple : _textSec(context), size: 22),
+                Icon(sel ? item.$1 : item.$2, color: sel ? accent : _textSec(context), size: 22),
                 if (sel) ...[
                   const SizedBox(width: 6),
-                  Text(item.$3, style: const TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 13)),
+                  Text(item.$3, style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 13)),
                 ],
               ]),
             ),
@@ -235,6 +233,7 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent      = _accent(context);
     final orders      = context.watch<OrderProvider>();
     final name        = profile?.displayName ?? 'Driver';
     final vehicle     = (profile?.vehicleType ?? '') as String;
@@ -244,7 +243,7 @@ class _HomeTab extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: onRefresh,
-      color: _purple,
+      color: accent,
       backgroundColor: _card(context),
       child: CustomScrollView(slivers: [
         SliverToBoxAdapter(child: Container(
@@ -262,11 +261,11 @@ class _HomeTab extends StatelessWidget {
             Row(children: [
               Container(width: 46, height: 46,
                 decoration: BoxDecoration(
-                  color: _purple.withOpacity(0.15),
+                  color: accent.withOpacity(0.15),
                   shape: BoxShape.circle,
-                  border: Border.all(color: _purple.withOpacity(0.3))),
+                  border: Border.all(color: accent.withOpacity(0.3))),
                 child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'D',
-                  style: const TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 20)))),
+                  style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 20)))),
               const Spacer(),
               GestureDetector(
                 onTap: () => context.toggleTheme(),
@@ -296,14 +295,14 @@ class _HomeTab extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
-                color: isOnline ? _green.withOpacity(0.12) : _soft(context),
+                color: isOnline ? accent.withOpacity(0.12) : _soft(context),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: isOnline ? _green.withOpacity(0.35) : _border(context))),
+                border: Border.all(color: isOnline ? accent.withOpacity(0.35) : _border(context))),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: isOnline ? _green : _textSec(context))),
+                Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: isOnline ? accent : _textSec(context))),
                 const SizedBox(width: 8),
                 Text(isOnline ? 'Online' : 'Offline',
-                  style: TextStyle(color: isOnline ? _green : _textSec(context), fontSize: 13, fontWeight: FontWeight.w600)),
+                  style: TextStyle(color: isOnline ? accent : _textSec(context), fontSize: 13, fontWeight: FontWeight.w600)),
               ]),
             ),
             const SizedBox(height: 24),
@@ -323,7 +322,7 @@ class _HomeTab extends StatelessWidget {
           ]),
         )),
         orders.isLoading
-            ? const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: _purple)))
+            ? SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: accent)))
             : orders.availableOrders.isEmpty
                 ? SliverFillRemaining(child: Center(child: Text('No available orders', style: TextStyle(color: _textSec(context)))))
                 : SliverPadding(
@@ -360,6 +359,7 @@ class _DriverVehicleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final emoji = _vehicleEmoji(vehicle);
     final label = _vehicleLabel(vehicle);
     final dark  = _isDark(context);
@@ -374,21 +374,21 @@ class _DriverVehicleCard extends StatelessWidget {
               : [const Color(0xFFE5FFD0), const Color(0xFFDDD6FE)],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: _purple.withOpacity(0.25)),
+        border: Border.all(color: accent.withOpacity(0.25)),
       ),
       child: Row(children: [
         // Avatar with online indicator
         Stack(clipBehavior: Clip.none, children: [
           Container(width: 58, height: 58,
             decoration: BoxDecoration(shape: BoxShape.circle,
-              color: _purple.withOpacity(0.15),
-              border: Border.all(color: isOnline ? _green.withOpacity(0.5) : _purple.withOpacity(0.3), width: 2)),
+              color: accent.withOpacity(0.15),
+              border: Border.all(color: isOnline ? accent.withOpacity(0.5) : accent.withOpacity(0.3), width: 2)),
             child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'D',
-              style: const TextStyle(color: _purple, fontSize: 24, fontWeight: FontWeight.w700)))),
+              style: TextStyle(color: accent, fontSize: 24, fontWeight: FontWeight.w700)))),
           Positioned(right: 0, bottom: 0,
             child: Container(width: 14, height: 14,
-              decoration: BoxDecoration(color: isOnline ? _green : const Color(0xFF9CA3AF),
-                shape: BoxShape.circle, border: Border.all(color: dark ? const Color(0xFF252525) : _purpleL, width: 2)))),
+              decoration: BoxDecoration(color: isOnline ? accent : const Color(0xFF9CA3AF),
+                shape: BoxShape.circle, border: Border.all(color: dark ? const Color(0xFF252525) : accent.withOpacity(0.15), width: 2)))),
         ]),
         const SizedBox(width: 16),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -402,7 +402,7 @@ class _DriverVehicleCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: dark ? Colors.white.withOpacity(0.08) : Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _purple.withOpacity(0.2))),
+            border: Border.all(color: accent.withOpacity(0.2))),
           child: Center(child: Text(emoji, style: const TextStyle(fontSize: 34)))),
       ]),
     );
@@ -426,36 +426,37 @@ class _ActiveDeliveryPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final dark = _isDark(context);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: dark ? const Color(0xFF0F1A12) : const Color(0xFF8EC4C8),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _green.withOpacity(0.3)),
+        border: Border.all(color: accent.withOpacity(0.3)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Container(width: 10, height: 10, decoration: const BoxDecoration(color: _green, shape: BoxShape.circle)),
+          Container(width: 10, height: 10, decoration: BoxDecoration(color: accent, shape: BoxShape.circle)),
           const SizedBox(width: 8),
-          Text('Active Delivery', style: TextStyle(color: _green, fontSize: 13, fontWeight: FontWeight.w700)),
+          Text('Active Delivery', style: TextStyle(color: accent, fontSize: 13, fontWeight: FontWeight.w700)),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: _orange.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
-            child: Text(_statusLabel, style: const TextStyle(color: _orange, fontSize: 11, fontWeight: FontWeight.w700))),
+            decoration: BoxDecoration(color: accent.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+            child: Text(_statusLabel, style: TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.w700))),
         ]),
         const SizedBox(height: 12),
         Text(order.description, style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 15),
           maxLines: 1, overflow: TextOverflow.ellipsis),
         const SizedBox(height: 8),
         Row(children: [
-          Icon(Icons.my_location_outlined, color: _green, size: 13),
+          Icon(Icons.my_location_outlined, color: accent, size: 13),
           const SizedBox(width: 4),
           Expanded(child: Text(order.pickupLocation, style: TextStyle(color: _textSec(context), fontSize: 12),
             maxLines: 1, overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 12),
-          Icon(Icons.flag_outlined, color: _orange, size: 13),
+          Icon(Icons.flag_outlined, color: accent, size: 13),
           const SizedBox(width: 4),
           Expanded(child: Text(order.dropoffLocation, style: TextStyle(color: _textSec(context), fontSize: 12),
             maxLines: 1, overflow: TextOverflow.ellipsis)),
@@ -493,6 +494,7 @@ class _AvailableOrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final hasPhotos = order.imageUrls.isNotEmpty;
     return GestureDetector(
       onTap: () => _showDetails(context),
@@ -521,7 +523,7 @@ class _AvailableOrderCard extends StatelessWidget {
                     loadingBuilder: (_, child, progress) => progress == null
                         ? child
                         : Container(width: 110, height: 110, color: _soft(context),
-                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: _purple))),
+                            child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: accent))),
                     errorBuilder: (_, __, ___) => Container(width: 110, height: 110, color: _soft(context),
                       child: Icon(Icons.broken_image_outlined, color: _textSec(context))),
                   ),
@@ -537,18 +539,18 @@ class _AvailableOrderCard extends StatelessWidget {
               maxLines: 3, overflow: TextOverflow.ellipsis)),
             const SizedBox(width: 12),
             Text('₮${order.price.toStringAsFixed(0)}',
-              style: const TextStyle(color: _green, fontSize: 18, fontWeight: FontWeight.w800)),
+              style: TextStyle(color: accent, fontSize: 18, fontWeight: FontWeight.w800)),
           ]),
           const SizedBox(height: 12),
           // Pickup
           _LocationRow(
             icon: Icons.my_location_outlined, label: 'Pickup',
-            address: order.pickupLocation, color: _green, context: context),
+            address: order.pickupLocation, color: accent, context: context),
           const SizedBox(height: 8),
           // Dropoff
           _LocationRow(
             icon: Icons.flag_outlined, label: 'Dropoff',
-            address: order.dropoffLocation, color: _orange, context: context),
+            address: order.dropoffLocation, color: accent, context: context),
           const SizedBox(height: 8),
           // Distance badge + tap hint
           Row(children: [
@@ -558,20 +560,20 @@ class _AvailableOrderCard extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _purple.withOpacity(0.10),
+                  color: accent.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _purple.withOpacity(0.25))),
+                  border: Border.all(color: accent.withOpacity(0.25))),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.near_me_rounded, color: _purple, size: 12),
+                  Icon(Icons.near_me_rounded, color: accent, size: 12),
                   const SizedBox(width: 4),
-                  Text(dist, style: const TextStyle(color: _purple, fontSize: 11, fontWeight: FontWeight.w700)),
+                  Text(dist, style: TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.w700)),
                 ]));
             }),
             const Spacer(),
             Text('Tap for full details',
-              style: TextStyle(color: _purple.withOpacity(0.65), fontSize: 11)),
+              style: TextStyle(color: accent.withOpacity(0.65), fontSize: 11)),
             const SizedBox(width: 4),
-            Icon(Icons.open_in_new_rounded, color: _purple.withOpacity(0.65), size: 12),
+            Icon(Icons.open_in_new_rounded, color: accent.withOpacity(0.65), size: 12),
           ]),
           const SizedBox(height: 12),
           // Request button — its own tap, won't trigger card tap
@@ -580,9 +582,9 @@ class _AvailableOrderCard extends StatelessWidget {
             child: Container(
               height: 48, alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: _orange,
+                color: accent,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: _orange.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))]),
+                boxShadow: [BoxShadow(color: accent.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))]),
               child: const Text('Send Delivery Request',
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)))),
           const SizedBox(height: 8),
@@ -645,6 +647,7 @@ class _OrderDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final dark = _isDark(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.82,
@@ -674,11 +677,11 @@ class _OrderDetailSheet extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: _green.withOpacity(0.1),
+                      color: accent.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _green.withOpacity(0.3))),
+                      border: Border.all(color: accent.withOpacity(0.3))),
                     child: Text('₮${order.price.toStringAsFixed(0)}',
-                      style: const TextStyle(color: _green, fontSize: 20, fontWeight: FontWeight.w800))),
+                      style: TextStyle(color: accent, fontSize: 20, fontWeight: FontWeight.w800))),
                 ]),
                 const SizedBox(height: 16),
 
@@ -696,10 +699,10 @@ class _OrderDetailSheet extends StatelessWidget {
                       child: Row(children: [
                         Container(
                           width: 40, height: 40,
-                          decoration: BoxDecoration(color: _purple.withOpacity(0.12), shape: BoxShape.circle),
+                          decoration: BoxDecoration(color: accent.withOpacity(0.12), shape: BoxShape.circle),
                           child: Center(child: Text(
                             name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                            style: const TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 18)))),
+                            style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 18)))),
                         const SizedBox(width: 12),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(name.isNotEmpty ? name : 'Seller',
@@ -713,8 +716,8 @@ class _OrderDetailSheet extends StatelessWidget {
                             onTap: () => launchUrl(Uri.parse('tel:$phone')),
                             child: Container(
                               width: 38, height: 38,
-                              decoration: BoxDecoration(color: _green.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-                              child: const Icon(Icons.phone_rounded, color: _green, size: 18))),
+                              decoration: BoxDecoration(color: accent.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                              child: Icon(Icons.phone_rounded, color: accent, size: 18))),
                       ]),
                     );
                   },
@@ -740,7 +743,7 @@ class _OrderDetailSheet extends StatelessWidget {
                           loadingBuilder: (_, child, progress) => progress == null
                               ? child
                               : Container(width: 220, height: 200, color: _soft(context),
-                                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: _purple))),
+                                  child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: accent))),
                           errorBuilder: (_, __, ___) => Container(width: 220, height: 200, color: _soft(context),
                             child: Icon(Icons.broken_image_outlined, color: _textSec(context), size: 36)),
                         ),
@@ -777,8 +780,8 @@ class _OrderDetailSheet extends StatelessWidget {
                   child: Column(children: [
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Container(width: 38, height: 38,
-                        decoration: BoxDecoration(color: _green.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-                        child: const Icon(Icons.my_location_rounded, color: _green, size: 20)),
+                        decoration: BoxDecoration(color: accent.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                        child: Icon(Icons.my_location_rounded, color: accent, size: 20)),
                       const SizedBox(width: 12),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text('Pickup Location',
@@ -799,8 +802,8 @@ class _OrderDetailSheet extends StatelessWidget {
                     ),
                     Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Container(width: 38, height: 38,
-                        decoration: BoxDecoration(color: _orange.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-                        child: const Icon(Icons.flag_rounded, color: _orange, size: 20)),
+                        decoration: BoxDecoration(color: accent.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                        child: Icon(Icons.flag_rounded, color: accent, size: 20)),
                       const SizedBox(width: 12),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text('Dropoff Location',
@@ -823,9 +826,9 @@ class _OrderDetailSheet extends StatelessWidget {
                   child: Container(
                     height: 56, alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: _orange,
+                      color: accent,
                       borderRadius: BorderRadius.circular(18),
-                      boxShadow: [BoxShadow(color: _orange.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))]),
+                      boxShadow: [BoxShadow(color: accent.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))]),
                     child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       Icon(Icons.local_shipping_rounded, color: Colors.white, size: 20),
                       SizedBox(width: 10),
@@ -852,9 +855,10 @@ class _ActiveTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final orders = context.watch<OrderProvider>();
     return RefreshIndicator(
-      onRefresh: onRefresh, color: _purple, backgroundColor: _card(context),
+      onRefresh: onRefresh, color: accent, backgroundColor: _card(context),
       child: CustomScrollView(slivers: [
         SliverToBoxAdapter(child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 58, 20, 20),
@@ -864,7 +868,7 @@ class _ActiveTab extends StatelessWidget {
           ]),
         )),
         orders.isLoading
-            ? const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: _purple)))
+            ? SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: accent)))
             : orders.activeOrders.isEmpty
                 ? SliverFillRemaining(child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                     Icon(Icons.inventory_2_outlined, color: _textSec(context), size: 48),
@@ -891,17 +895,18 @@ class _ActiveOrderCard extends StatelessWidget {
 
   String get _chatId => '${order.id}_${order.sellerId}_${order.driverId ?? ''}';
 
-  Color _sc() {
+  Color _sc(Color accent) {
     switch (order.status) {
-      case AppStatus.accepted:  return _purple;
+      case AppStatus.accepted:  return accent;
       case AppStatus.pickedUp:  return const Color(0xFF3B82F6);
-      case AppStatus.onTheWay:  return _orange;
+      case AppStatus.onTheWay:  return accent;
       default: return const Color(0xFF98A1AE);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(color: _card(context), borderRadius: BorderRadius.circular(24), border: Border.all(color: _border(context))),
@@ -914,11 +919,11 @@ class _ActiveOrderCard extends StatelessWidget {
         Row(children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: _sc().withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-            child: Text(order.status, style: TextStyle(color: _sc(), fontSize: 12, fontWeight: FontWeight.w700))),
+            decoration: BoxDecoration(color: _sc(accent).withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+            child: Text(order.status, style: TextStyle(color: _sc(accent), fontSize: 12, fontWeight: FontWeight.w700))),
           const Spacer(),
           Text('\$${order.price.toStringAsFixed(0)}',
-            style: const TextStyle(color: _green, fontSize: 16, fontWeight: FontWeight.w800)),
+            style: TextStyle(color: accent, fontSize: 16, fontWeight: FontWeight.w800)),
         ]),
         const SizedBox(height: 14),
         // Directions button — pickup until picked up, then dropoff
@@ -930,11 +935,11 @@ class _ActiveOrderCard extends StatelessWidget {
         // Status buttons
         Wrap(spacing: 8, runSpacing: 8, children: [
           if (order.status == AppStatus.accepted)
-            _StatusBtn('Picked Up 📦', _green, () => onUpdateStatus(order, AppStatus.pickedUp)),
+            _StatusBtn('Picked Up 📦', accent, () => onUpdateStatus(order, AppStatus.pickedUp)),
           if (order.status == AppStatus.pickedUp)
-            _StatusBtn('On The Way 🚛', _purple, () => onUpdateStatus(order, AppStatus.onTheWay)),
+            _StatusBtn('On The Way 🚛', accent, () => onUpdateStatus(order, AppStatus.onTheWay)),
           if (order.status == AppStatus.onTheWay)
-            _StatusBtn('Delivered ✓', _orange, () => onUpdateStatus(order, AppStatus.delivered)),
+            _StatusBtn('Delivered ✓', accent, () => onUpdateStatus(order, AppStatus.delivered)),
         ]),
       ]),
     );
@@ -970,10 +975,11 @@ class _DirectionsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent   = _accent(context);
     final toPickup = _goToPickup;
     final label    = toPickup ? 'Navigate to Pickup' : 'Navigate to Dropoff';
     final icon     = toPickup ? Icons.my_location_rounded : Icons.flag_rounded;
-    final color    = toPickup ? _green : _orange;
+    final color    = accent;
     final address  = toPickup ? order.pickupLocation : order.dropoffLocation;
     final lat      = toPickup ? order.pickupLat  : order.dropoffLat;
     final lng      = toPickup ? order.pickupLng  : order.dropoffLng;
@@ -1047,18 +1053,19 @@ class _DriverChatButton extends StatelessWidget {
             if (!(cs.data?.exists ?? false)) {
               return Text('Preparing chat…', style: TextStyle(color: _textSec(context), fontSize: 13));
             }
+            final accent = _accent(ctx);
             return GestureDetector(
               onTap: () => Navigator.pushNamed(ctx, AppRoutes.chatScreen,
                 arguments: ChatScreenArgs(chatId: chatId, title: order.description)),
               child: Container(height: 44, alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: _purple.withOpacity(0.1),
+                  color: accent.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _purple.withOpacity(0.3))),
-                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.chat_bubble_outline, color: _purple, size: 16),
-                  SizedBox(width: 8),
-                  Text('Open Chat', style: TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 13)),
+                  border: Border.all(color: accent.withOpacity(0.3))),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.chat_bubble_outline, color: accent, size: 16),
+                  const SizedBox(width: 8),
+                  Text('Open Chat', style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 13)),
                 ])),
             );
           },
@@ -1073,20 +1080,23 @@ class _ChatsTab extends StatelessWidget {
   const _ChatsTab();
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: GestureDetector(
-      onTap: () => Navigator.pushNamed(context, AppRoutes.chatList),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        decoration: BoxDecoration(
-          color: _card(context),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _purple.withOpacity(0.4))),
-        child: const Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.chat_bubble_outline, color: _purple),
-          SizedBox(width: 10),
-          Text('Open Chats', style: TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 15)),
-        ]))));
+  Widget build(BuildContext context) {
+    final accent = _accent(context);
+    return Center(
+      child: GestureDetector(
+        onTap: () => Navigator.pushNamed(context, AppRoutes.chatList),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          decoration: BoxDecoration(
+            color: _card(context),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: accent.withOpacity(0.4))),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.chat_bubble_outline, color: accent),
+            const SizedBox(width: 10),
+            Text('Open Chats', style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 15)),
+          ]))));
+  }
 }
 
 // ── Profile Tab ───────────────────────────────────────────────────────────────
@@ -1096,6 +1106,7 @@ class _ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent  = _accent(context);
     final auth    = context.watch<AppAuthProvider>();
     final profile = auth.currentUserProfile;
     final name    = profile?.displayName ?? 'Driver';
@@ -1111,10 +1122,10 @@ class _ProfileTab extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 58, 20, 32),
         child: Column(children: [
           Container(width: 90, height: 90,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: _purple.withOpacity(0.15),
-              border: Border.all(color: online ? _green.withOpacity(0.5) : _purple.withOpacity(0.3), width: 2)),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: accent.withOpacity(0.15),
+              border: Border.all(color: online ? accent.withOpacity(0.5) : accent.withOpacity(0.3), width: 2)),
             child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'D',
-              style: const TextStyle(color: _purple, fontSize: 36, fontWeight: FontWeight.w700)))),
+              style: TextStyle(color: accent, fontSize: 36, fontWeight: FontWeight.w700)))),
           const SizedBox(height: 14),
           Text(name, style: TextStyle(color: _textPri(context), fontSize: 22, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
@@ -1124,7 +1135,7 @@ class _ProfileTab extends StatelessWidget {
           const SizedBox(height: 10),
           _tile(context, '🕐 Experience', '$years year${years != 1 ? 's' : ''}'),
           const SizedBox(height: 10),
-          _tile(context, '⚡ Status', online ? 'Online' : 'Offline', valueColor: online ? _green : _textSec(context)),
+          _tile(context, '⚡ Status', online ? 'Online' : 'Offline', valueColor: online ? accent : _textSec(context)),
           const SizedBox(height: 10),
           GestureDetector(
             onTap: () => context.toggleTheme(),
@@ -1132,7 +1143,7 @@ class _ProfileTab extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(color: _card(context), borderRadius: BorderRadius.circular(18), border: Border.all(color: _border(context))),
               child: Row(children: [
-                Icon(dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined, color: _purple, size: 20),
+                Icon(dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined, color: accent, size: 20),
                 const SizedBox(width: 14),
                 Text(dark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
                   style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w600, fontSize: 14)),
@@ -1149,7 +1160,7 @@ class _ProfileTab extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(color: _card(context), borderRadius: BorderRadius.circular(18), border: Border.all(color: _border(context))),
                 child: Row(children: [
-                  const Icon(Icons.admin_panel_settings_outlined, color: _orange, size: 20),
+                  Icon(Icons.admin_panel_settings_outlined, color: accent, size: 20),
                   const SizedBox(width: 14),
                   Text('Admin Panel', style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w600, fontSize: 14)),
                   const Spacer(),
@@ -1162,9 +1173,9 @@ class _ProfileTab extends StatelessWidget {
           GestureDetector(
             onTap: onLogout,
             child: Container(height: 54, alignment: Alignment.center,
-              decoration: BoxDecoration(color: _orange.withOpacity(0.1), borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _orange.withOpacity(0.35))),
-              child: const Text('Logout', style: TextStyle(color: _orange, fontWeight: FontWeight.w700, fontSize: 15)))),
+              decoration: BoxDecoration(color: accent.withOpacity(0.1), borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: accent.withOpacity(0.35))),
+              child: Text('Logout', style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 15)))),
         ]),
       )),
     ]);
