@@ -12,11 +12,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/order_model.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _accent(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 
-const _purple = Color(0xFF89F336);
-const _orange = Color(0xFF89F336);
-const _green  = Color(0xFF89F336);
-const _blue   = Color(0xFF3B82F6);
+const _blue = Color(0xFF3B82F6);
 
 class NavigationScreen extends StatefulWidget {
   final OrderModel order;
@@ -229,11 +227,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
     final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
     final textSec = dark ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
     final cardBg  = dark ? const Color(0xFF2C2C2C) : Colors.white;
-    final destColor = widget.isPickup ? _green : _orange;
+    final accent  = _accent(context);
+    final destColor = accent;
 
     return Scaffold(
       body: _locating
-          ? _buildLocating(dark, textPri, textSec)
+          ? _buildLocating(dark, textPri, textSec, accent)
           : Stack(children: [
               // ── Map ──────────────────────────────────────────────────────
               FlutterMap(
@@ -346,11 +345,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: _green,
+                      color: accent,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: _green.withOpacity(0.4),
+                          color: accent.withOpacity(0.4),
                           blurRadius: 20, offset: const Offset(0, 4)),
                       ],
                     ),
@@ -394,7 +393,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
     );
   }
 
-  Widget _buildLocating(bool dark, Color textPri, Color textSec) {
+  Widget _buildLocating(bool dark, Color textPri, Color textSec, Color accent) {
     final cardBg = dark ? const Color(0xFF2C2C2C) : Colors.white;
     return Scaffold(
       backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5),
@@ -429,7 +428,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
           child: Row(children: [
             Icon(widget.isPickup
                 ? Icons.inventory_2_outlined : Icons.flag_outlined,
-              color: widget.isPickup ? _green : _orange, size: 22),
+              color: accent, size: 22),
             const SizedBox(width: 12),
             Expanded(child: Text(_destAddress,
               style: TextStyle(

@@ -6,10 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/payment_provider.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _accent(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 
-const _purple = Color(0xFF89F336);
-const _orange = Color(0xFF89F336);
-const _green  = Color(0xFF89F336);
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -94,10 +92,11 @@ class _AdminScreenState extends State<AdminScreen>
 
   @override
   Widget build(BuildContext context) {
+    final accent  = _accent(context);
     final dark    = _isDark(context);
     final textPri = dark ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
     final textSec = dark ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
-    final card    = dark ? const Color(0xFF2C2C2C) : Colors.white;
+    final card    = dark ? const Color(0xFF2C2C2C) : const Color(0xFFB5CDD0);
     final border  = dark ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
     final bg      = dark ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5);
     final soft    = dark ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7);
@@ -118,8 +117,8 @@ class _AdminScreenState extends State<AdminScreen>
         iconTheme: IconThemeData(color: textPri),
         bottom: TabBar(
           controller: _tab,
-          indicatorColor: _purple,
-          labelColor: _purple,
+          indicatorColor: accent,
+          labelColor: accent,
           unselectedLabelColor: textSec,
           tabs: [
             Tab(text: 'Pending (${pendingPay.length})'),
@@ -128,7 +127,7 @@ class _AdminScreenState extends State<AdminScreen>
         ),
       ),
       body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator(color: _purple))
+          ? Center(child: CircularProgressIndicator(color: accent))
           : displayed.isEmpty
               ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.receipt_long_outlined,
@@ -148,7 +147,7 @@ class _AdminScreenState extends State<AdminScreen>
                   itemBuilder: (_, i) => _PaymentCard(
                     payment: displayed[i],
                     card: card, border: border, textPri: textPri,
-                    textSec: textSec, soft: soft,
+                    textSec: textSec, soft: soft, accent: accent,
                     onApprove: displayed[i].status == 'pending'
                         ? () => _approve(displayed[i]) : null,
                     onReject: displayed[i].status == 'pending'
@@ -161,21 +160,21 @@ class _AdminScreenState extends State<AdminScreen>
 
 class _PaymentCard extends StatelessWidget {
   final PaymentModel payment;
-  final Color card, border, textPri, textSec, soft;
+  final Color card, border, textPri, textSec, soft, accent;
   final VoidCallback? onApprove, onReject;
   const _PaymentCard({
     required this.payment,
     required this.card, required this.border,
     required this.textPri, required this.textSec,
-    required this.soft,
+    required this.soft, required this.accent,
     this.onApprove, this.onReject,
   });
 
   Color get _statusColor {
     switch (payment.status) {
-      case 'approved': return _green;
+      case 'approved': return accent;
       case 'rejected': return Colors.redAccent;
-      default:         return _orange;
+      default:         return accent;
     }
   }
 
@@ -193,13 +192,13 @@ class _PaymentCard extends StatelessWidget {
           Container(
             width: 44, height: 44,
             decoration: BoxDecoration(
-              color: _purple.withOpacity(0.12), shape: BoxShape.circle),
+              color: accent.withOpacity(0.12), shape: BoxShape.circle),
             child: Center(
               child: Text(
                 payment.userName.isNotEmpty
                     ? payment.userName[0].toUpperCase() : 'U',
-                style: const TextStyle(
-                  color: _purple, fontWeight: FontWeight.w700, fontSize: 18)))),
+                style: TextStyle(
+                  color: accent, fontWeight: FontWeight.w700, fontSize: 18)))),
           const SizedBox(width: 12),
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -231,7 +230,7 @@ class _PaymentCard extends StatelessWidget {
         _Row('Submitted', _fmt(payment.submittedAt), textSec, textSec),
         if (payment.status == 'approved' && payment.processedAt != null) ...[
           const SizedBox(height: 4),
-          _Row('Approved', _fmt(payment.processedAt), textSec, _green),
+          _Row('Approved', _fmt(payment.processedAt), textSec, accent),
         ],
         if (payment.status == 'rejected' && payment.note?.isNotEmpty == true) ...[
           const SizedBox(height: 4),
@@ -262,12 +261,12 @@ class _PaymentCard extends StatelessWidget {
                 onTap: onApprove,
                 child: Container(height: 42, alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: _green.withOpacity(0.1),
+                    color: accent.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: _green.withOpacity(0.35))),
-                  child: const Text('Approve (+30 days)',
+                    border: Border.all(color: accent.withOpacity(0.35))),
+                  child: Text('Approve (+30 days)',
                     style: TextStyle(
-                      color: _green,
+                      color: accent,
                       fontWeight: FontWeight.w700, fontSize: 13))),
               )),
           ]),

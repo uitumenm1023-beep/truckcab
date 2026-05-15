@@ -7,6 +7,7 @@ import '../../providers/notification_provider.dart';
 import '../../routes/app_routes.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _accent(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 Color _textPri(BuildContext ctx) =>
     _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
 Color _textSec(BuildContext ctx) =>
@@ -18,9 +19,6 @@ Color _unreadBg(BuildContext ctx) =>
 Color _border(BuildContext ctx) =>
     _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
 
-const _purple = Color(0xFF89F336);
-const _orange = Color(0xFF89F336);
-const _green  = Color(0xFF89F336);
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -98,22 +96,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  Color _colorFor(String type) {
-    switch (type) {
-      case 'package_delivered':
-      case 'delivery_approved': return _green;
-      case 'chat_message':
-      case 'chat_accepted':
-      case 'chat_request':     return _purple;
-      default:                 return _orange;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final notifProvider = context.watch<NotificationProvider>();
     final notifications = notifProvider.notifications;
     final dark = _isDark(context);
+    final accent = _accent(context);
 
     return Scaffold(
       backgroundColor: dark ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5),
@@ -127,13 +115,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
           if (notifications.any((n) => !n.isRead))
             TextButton(
               onPressed: _markAllAsRead,
-              child: const Text('Mark all read',
-                style: TextStyle(color: _purple, fontWeight: FontWeight.w600, fontSize: 13)),
+              child: Text('Mark all read',
+                style: TextStyle(color: accent, fontWeight: FontWeight.w600, fontSize: 13)),
             ),
         ],
       ),
       body: notifProvider.isLoading
-          ? const Center(child: CircularProgressIndicator(color: _purple))
+          ? Center(child: CircularProgressIndicator(color: accent))
           : notifProvider.errorMessage != null
               ? Center(
                   child: Padding(
@@ -158,7 +146,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (ctx, i) {
                         final n = notifications[i];
-                        final c = _colorFor(n.type);
+                        final c = _accent(ctx);
                         final isRequest = n.type == 'chat_request';
                         final isChat = n.type == 'chat_message' ||
                             n.type == 'chat_accepted';
@@ -231,12 +219,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                           isRequest
                                               ? Icons.local_shipping_outlined
                                               : Icons.open_in_new_rounded,
-                                          color: _purple, size: 12),
+                                          color: c, size: 12),
                                         const SizedBox(width: 4),
                                         Text(
                                           isRequest ? 'View Request' : 'Open chat',
-                                          style: const TextStyle(
-                                            color: _purple, fontSize: 12,
+                                          style: TextStyle(
+                                            color: c, fontSize: 12,
                                             fontWeight: FontWeight.w600)),
                                       ]),
                                     ],

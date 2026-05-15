@@ -111,8 +111,8 @@ class _AppLifecycleGateState extends State<_AppLifecycleGate> with WidgetsBindin
     scaffoldBackgroundColor: const Color(0xFF93B1B5),
     fontFamily: 'Roboto',
     colorScheme: const ColorScheme.light(
-      primary: Color(0xFF89F336),
-      secondary: Color(0xFF89F336),
+      primary: Color(0xFF4F7C82),
+      secondary: Color(0xFF4F7C82),
       surface: Color(0xFFB5CDD0),
       error: Colors.redAccent,
     ),
@@ -128,10 +128,10 @@ class _AppLifecycleGateState extends State<_AppLifecycleGate> with WidgetsBindin
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: const Color(0xFF4F7C82),
-      indicatorColor: const Color(0x2289F336),
+      indicatorColor: const Color(0x224F7C82),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const IconThemeData(color: Color(0xFF89F336));
+          return const IconThemeData(color: Color(0xFF4F7C82));
         }
         return const IconThemeData(color: Color(0xFF2A4A50));
       }),
@@ -198,16 +198,8 @@ class _NotificationToastWrapper extends StatelessWidget {
     }
   }
 
-  Color _colorFor(String type) {
-    switch (type) {
-      case 'package_delivered':
-      case 'delivery_approved': return const Color(0xFF89F336);
-      case 'chat_message':
-      case 'chat_accepted':
-      case 'chat_request':     return const Color(0xFF89F336);
-      default:                 return const Color(0xFF89F336);
-    }
-  }
+  Color _colorFor(String type, bool dark) =>
+      dark ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 
   void _navigate(dynamic notification) {
     final nav = navKey.currentState;
@@ -235,6 +227,7 @@ class _NotificationToastWrapper extends StatelessWidget {
     return Consumer<NotificationProvider>(
       builder: (ctx, notifProvider, _) {
         final toast = notifProvider.toastNotification;
+        final dark = Theme.of(context).brightness == Brightness.dark;
         return Stack(children: [
           child,
           if (toast != null)
@@ -244,7 +237,7 @@ class _NotificationToastWrapper extends StatelessWidget {
               right: 16,
               child: _ToastCard(
                 notification: toast,
-                color: _colorFor(toast.type),
+                color: _colorFor(toast.type, dark),
                 icon: _iconFor(toast.type),
                 onTap: () {
                   notifProvider.dismissToast();

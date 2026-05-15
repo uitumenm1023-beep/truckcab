@@ -12,6 +12,7 @@ import '../../providers/order_provider.dart';
 import '../../routes/app_routes.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _accent(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
 Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
 Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7);
@@ -19,10 +20,6 @@ Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : con
 Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
 Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5);
 
-const Color _purple     = Color(0xFF89F336);
-const Color _purpleL    = Color(0xFFE5FFD0);
-const Color _orange     = Color(0xFF89F336);
-const Color _green      = Color(0xFF89F336);
 
 class SellerHomeScreen extends StatefulWidget {
   const SellerHomeScreen({super.key});
@@ -89,6 +86,7 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final dark = _isDark(context);
     final bottomPad = MediaQuery.of(context).padding.bottom;
     const items = [
@@ -116,14 +114,14 @@ class _BottomNav extends StatelessWidget {
               duration: const Duration(milliseconds: 220),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: sel ? _purple.withOpacity(0.12) : Colors.transparent,
+                color: sel ? accent.withOpacity(0.12) : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(children: [
-                Icon(sel ? item.$1 : item.$2, color: sel ? _purple : _textSec(context), size: 22),
+                Icon(sel ? item.$1 : item.$2, color: sel ? accent : _textSec(context), size: 22),
                 if (sel) ...[
                   const SizedBox(width: 6),
-                  Text(item.$3, style: const TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 13)),
+                  Text(item.$3, style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 13)),
                 ],
               ]),
             ),
@@ -141,6 +139,7 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent  = _accent(context);
     final auth    = context.watch<AppAuthProvider>();
     final orders  = context.watch<OrderProvider>();
     final notifs  = context.watch<NotificationProvider>();
@@ -200,16 +199,16 @@ class _HomeTab extends StatelessWidget {
           Row(children: [
             Expanded(child: _QuickCard(
               label: 'New Delivery', sublabel: 'Create order',
-              color: _purple,
-              bgColor: dark ? const Color(0xFF252525) : _purpleL,
+              color: accent,
+              bgColor: dark ? const Color(0xFF252525) : accent.withOpacity(0.15),
               icon: Icons.add_box_rounded,
               onTap: () => Navigator.pushNamed(context, AppRoutes.createOrder),
             )),
             const SizedBox(width: 14),
             Expanded(child: _QuickCard(
               label: 'Track Package', sublabel: 'All orders',
-              color: _orange,
-              bgColor: dark ? const Color(0xFF1C1209) : const Color(0xFFFFF0EB),
+              color: accent,
+              bgColor: dark ? const Color(0xFF1C1209) : accent.withOpacity(0.08),
               icon: Icons.local_shipping_outlined,
               onTap: () => Navigator.pushNamed(context, AppRoutes.sellerOrders),
             )),
@@ -221,7 +220,7 @@ class _HomeTab extends StatelessWidget {
             const Spacer(),
             GestureDetector(
               onTap: () => Navigator.pushNamed(context, AppRoutes.sellerOrders),
-              child: Text('See all', style: const TextStyle(color: _purple, fontSize: 13, fontWeight: FontWeight.w600)),
+              child: Text('See all', style: TextStyle(color: accent, fontSize: 13, fontWeight: FontWeight.w600)),
             ),
           ]),
         ]),
@@ -235,21 +234,21 @@ class _HomeTab extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: _orange.withOpacity(0.1),
+                color: accent.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _orange.withOpacity(0.3)),
+                border: Border.all(color: accent.withOpacity(0.3)),
               ),
               child: Row(children: [
                 Container(width: 38, height: 38,
-                  decoration: BoxDecoration(color: _orange.withOpacity(0.15), shape: BoxShape.circle),
-                  child: const Icon(Icons.mark_chat_unread_outlined, color: _orange, size: 18)),
+                  decoration: BoxDecoration(color: accent.withOpacity(0.15), shape: BoxShape.circle),
+                  child: Icon(Icons.mark_chat_unread_outlined, color: accent, size: 18)),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('$pendingRequests new delivery request${pendingRequests > 1 ? 's' : ''}',
-                    style: const TextStyle(color: _orange, fontWeight: FontWeight.w700, fontSize: 13)),
-                  Text('Tap to review', style: TextStyle(color: _orange.withOpacity(0.7), fontSize: 11)),
+                    style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 13)),
+                  Text('Tap to review', style: TextStyle(color: accent.withOpacity(0.7), fontSize: 11)),
                 ])),
-                const Icon(Icons.chevron_right, color: _orange),
+                Icon(Icons.chevron_right, color: accent),
               ]),
             ),
           ),
@@ -268,7 +267,7 @@ class _HomeTab extends StatelessWidget {
                   const SizedBox(height: 8),
                   GestureDetector(
                     onTap: () => Navigator.pushNamed(context, AppRoutes.createOrder),
-                    child: const Text('Create your first order →', style: TextStyle(color: _purple, fontWeight: FontWeight.w600, fontSize: 13)),
+                    child: Text('Create your first order →', style: TextStyle(color: accent, fontWeight: FontWeight.w600, fontSize: 13)),
                   ),
                 ]),
               ),
@@ -332,12 +331,12 @@ class _ShipmentCard extends StatelessWidget {
   final OrderModel order;
   const _ShipmentCard({required this.order});
 
-  Color get _sc {
+  Color _sc(Color accent) {
     switch (order.status) {
-      case AppStatus.accepted:  return _purple;
+      case AppStatus.accepted:  return accent;
       case AppStatus.pickedUp:  return const Color(0xFF3B82F6);
-      case AppStatus.onTheWay:  return _orange;
-      case AppStatus.delivered: return _green;
+      case AppStatus.onTheWay:  return accent;
+      case AppStatus.delivered: return accent;
       default: return const Color(0xFF2A4A50);
     }
   }
@@ -363,19 +362,20 @@ class _ShipmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final dark = _isDark(context);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: dark ? const Color(0xFF252525) : _purpleL,
+        color: dark ? const Color(0xFF252525) : accent.withOpacity(0.15),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _purple.withOpacity(0.2)),
+        border: Border.all(color: accent.withOpacity(0.2)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(width: 42, height: 42,
             decoration: BoxDecoration(color: dark ? Colors.white.withOpacity(0.08) : Colors.white, borderRadius: BorderRadius.circular(12)),
-            child: const Icon(Icons.inventory_2_outlined, color: _purple, size: 20)),
+            child: Icon(Icons.inventory_2_outlined, color: accent, size: 20)),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(order.description,
@@ -386,15 +386,15 @@ class _ShipmentCard extends StatelessWidget {
           ])),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: _sc.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
-            child: Text(_sl, style: TextStyle(color: _sc, fontSize: 11, fontWeight: FontWeight.w700))),
+            decoration: BoxDecoration(color: _sc(accent).withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+            child: Text(_sl, style: TextStyle(color: _sc(accent), fontSize: 11, fontWeight: FontWeight.w700))),
         ]),
         const SizedBox(height: 14),
         ClipRRect(borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: _progress, minHeight: 4,
             backgroundColor: dark ? Colors.white.withOpacity(0.1) : Colors.white,
-            valueColor: AlwaysStoppedAnimation<Color>(_sc))),
+            valueColor: AlwaysStoppedAnimation<Color>(_sc(accent)))),
         const SizedBox(height: 14),
         Row(children: [
           Icon(Icons.location_on_outlined, color: _textSec(context), size: 13),
@@ -435,16 +435,17 @@ class _SellerChatBtn extends StatelessWidget {
           stream: FirebaseFirestore.instance.collection('chats').doc(chatId).snapshots(),
           builder: (ctx2, cs) {
             if (!(cs.data?.exists ?? false)) return Text('Preparing chat...', style: TextStyle(color: _textSec(context), fontSize: 12));
+            final accent = _accent(ctx);
             return GestureDetector(
               onTap: () => Navigator.pushNamed(ctx, AppRoutes.chatScreen,
                 arguments: ChatScreenArgs(chatId: chatId, title: order.description)),
               child: Container(height: 40, alignment: Alignment.center,
-                decoration: BoxDecoration(color: _purple.withOpacity(0.12), borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _purple.withOpacity(0.3))),
-                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.chat_bubble_outline, color: _purple, size: 15),
-                  SizedBox(width: 6),
-                  Text('Open Chat', style: TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 13)),
+                decoration: BoxDecoration(color: accent.withOpacity(0.12), borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: accent.withOpacity(0.3))),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.chat_bubble_outline, color: accent, size: 15),
+                  const SizedBox(width: 6),
+                  Text('Open Chat', style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 13)),
                 ])),
             );
           },
@@ -486,13 +487,13 @@ class _TrackCard extends StatelessWidget {
   final OrderModel order;
   const _TrackCard({required this.order});
 
-  Color get _sc {
+  Color _sc(Color accent) {
     switch (order.status) {
       case AppStatus.open:      return const Color(0xFF2A4A50);
-      case AppStatus.accepted:  return _purple;
+      case AppStatus.accepted:  return accent;
       case AppStatus.pickedUp:  return const Color(0xFF3B82F6);
-      case AppStatus.onTheWay:  return _orange;
-      case AppStatus.delivered: return _green;
+      case AppStatus.onTheWay:  return accent;
+      case AppStatus.delivered: return accent;
       default: return const Color(0xFF2A4A50);
     }
   }
@@ -510,6 +511,7 @@ class _TrackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final hasDriver = order.driverId != null && order.driverId!.isNotEmpty;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -521,8 +523,8 @@ class _TrackCard extends StatelessWidget {
             maxLines: 1, overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 10),
           Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: _sc.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-            child: Text(_sl, style: TextStyle(color: _sc, fontSize: 11, fontWeight: FontWeight.w700))),
+            decoration: BoxDecoration(color: _sc(accent).withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+            child: Text(_sl, style: TextStyle(color: _sc(accent), fontSize: 11, fontWeight: FontWeight.w700))),
         ]),
         const SizedBox(height: 8),
         Text('${order.pickupLocation} → ${order.dropoffLocation}',
@@ -530,7 +532,7 @@ class _TrackCard extends StatelessWidget {
         const SizedBox(height: 6),
         Row(children: [
           Text('\$${order.price.toStringAsFixed(0)}',
-            style: const TextStyle(color: _green, fontWeight: FontWeight.w800, fontSize: 15)),
+            style: TextStyle(color: accent, fontWeight: FontWeight.w800, fontSize: 15)),
           const Spacer(),
           Text(hasDriver ? 'Driver assigned' : 'Awaiting driver',
             style: TextStyle(color: _textSec(context), fontSize: 11)),
@@ -594,6 +596,7 @@ class _ChatTile extends StatelessWidget {
         final um   = ud is Map<String, dynamic> ? ud : <String, dynamic>{};
         final name = (um['name'] ?? um['email'] ?? 'User').toString();
         final isOnline = um['isOnline'] == true;
+        final accent = _accent(context);
         return GestureDetector(
           onTap: () => Navigator.pushNamed(context, AppRoutes.chatScreen,
             arguments: ChatScreenArgs(chatId: chatId, title: description)),
@@ -607,7 +610,7 @@ class _ChatTile extends StatelessWidget {
                     style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 18)))),
                 Positioned(right: 0, bottom: 0,
                   child: Container(width: 12, height: 12,
-                    decoration: BoxDecoration(color: isOnline ? _green : const Color(0xFF9CA3AF),
+                    decoration: BoxDecoration(color: isOnline ? accent : const Color(0xFF9CA3AF),
                       shape: BoxShape.circle, border: Border.all(color: _card(context), width: 2)))),
               ]),
               const SizedBox(width: 12),
@@ -618,7 +621,7 @@ class _ChatTile extends StatelessWidget {
                 Text(lastMessage.isEmpty ? 'No messages yet' : lastMessage,
                   style: TextStyle(color: _textSec(context), fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
               ])),
-              const Icon(Icons.chevron_right, color: _purple, size: 20),
+              Icon(Icons.chevron_right, color: accent, size: 20),
             ]),
           ),
         );
@@ -634,6 +637,7 @@ class _ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent  = _accent(context);
     final auth    = context.watch<AppAuthProvider>();
     final profile = auth.currentUserProfile;
     final name    = profile?.displayName ?? 'Seller';
@@ -647,10 +651,10 @@ class _ProfileTab extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 58, 20, 32),
         child: Column(children: [
           Container(width: 88, height: 88,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: _purple.withOpacity(0.15),
-              border: Border.all(color: _purple.withOpacity(0.4), width: 2)),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: accent.withOpacity(0.15),
+              border: Border.all(color: accent.withOpacity(0.4), width: 2)),
             child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'S',
-              style: const TextStyle(color: _purple, fontSize: 36, fontWeight: FontWeight.w700)))),
+              style: TextStyle(color: accent, fontSize: 36, fontWeight: FontWeight.w700)))),
           const SizedBox(height: 14),
           Text(name, style: TextStyle(color: _textPri(context), fontSize: 22, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
@@ -658,12 +662,12 @@ class _ProfileTab extends StatelessWidget {
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(color: online ? _green.withOpacity(0.12) : _soft(context), borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(color: online ? accent.withOpacity(0.12) : _soft(context), borderRadius: BorderRadius.circular(20)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 7, height: 7, decoration: BoxDecoration(shape: BoxShape.circle, color: online ? _green : _textSec(context))),
+              Container(width: 7, height: 7, decoration: BoxDecoration(shape: BoxShape.circle, color: online ? accent : _textSec(context))),
               const SizedBox(width: 6),
               Text(online ? 'Online' : 'Offline',
-                style: TextStyle(color: online ? _green : _textSec(context), fontSize: 12, fontWeight: FontWeight.w600)),
+                style: TextStyle(color: online ? accent : _textSec(context), fontSize: 12, fontWeight: FontWeight.w600)),
             ]),
           ),
           const SizedBox(height: 28),
@@ -676,22 +680,22 @@ class _ProfileTab extends StatelessWidget {
             const SizedBox(height: 10),
             _tile(context, Icons.admin_panel_settings_outlined, 'Admin Panel',
               () => Navigator.pushNamed(context, AppRoutes.admin),
-              valueColor: _orange),
+              valueColor: accent),
           ],
           const SizedBox(height: 28),
           GestureDetector(
             onTap: onLogout,
             child: Container(height: 54, alignment: Alignment.center,
-              decoration: BoxDecoration(color: _orange.withOpacity(0.1), borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _orange.withOpacity(0.35))),
-              child: const Text('Logout', style: TextStyle(color: _orange, fontWeight: FontWeight.w700, fontSize: 15)))),
+              decoration: BoxDecoration(color: accent.withOpacity(0.1), borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: accent.withOpacity(0.35))),
+              child: Text('Logout', style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 15)))),
         ]),
       )),
     ]);
   }
 
   Widget _tile(BuildContext ctx, IconData icon, String label, VoidCallback onTap, {Color? valueColor}) {
-    final iconColor = valueColor ?? _purple;
+    final iconColor = valueColor ?? _accent(ctx);
     return GestureDetector(
       onTap: onTap,
       child: Container(

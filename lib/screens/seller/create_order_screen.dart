@@ -13,6 +13,7 @@ import '../../providers/order_provider.dart';
 import '../map/map_picker_screen.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _accent(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 Color _textPri(BuildContext ctx) =>
     _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
 Color _textSec(BuildContext ctx) =>
@@ -24,9 +25,6 @@ Color _soft(BuildContext ctx) =>
 Color _border(BuildContext ctx) =>
     _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
 
-const _purple = Color(0xFF89F336);
-const _orange = Color(0xFF89F336);
-const _green  = Color(0xFF89F336);
 
 class CreateOrderScreen extends StatefulWidget {
   const CreateOrderScreen({super.key});
@@ -214,6 +212,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     final dark = _isDark(context);
 
     return Scaffold(
@@ -237,7 +236,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             _LocationTile(
               address:   _pickupAddress,
               icon:      Icons.my_location_rounded,
-              color:     _green,
+              color:     accent,
               hint:      'Tap to select on map',
               onTap:     () => _pickLocation(true),
               context:   context,
@@ -249,7 +248,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             _LocationTile(
               address:   _dropoffAddress,
               icon:      Icons.flag_rounded,
-              color:     _orange,
+              color:     accent,
               hint:      'Tap to select on map',
               onTap:     () => _pickLocation(false),
               context:   context,
@@ -296,9 +295,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               child: ElevatedButton(
                 onPressed: _submitting ? null : _createOrder,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _orange,
+                  backgroundColor: accent,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: _orange.withOpacity(0.4),
+                  disabledBackgroundColor: accent.withOpacity(0.4),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20)),
                   elevation: 0,
@@ -427,7 +426,7 @@ class _StyledField extends StatelessWidget {
         borderSide: BorderSide(color: _border(context))),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: _purple, width: 1.5)),
+        borderSide: BorderSide(color: _accent(context), width: 1.5)),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: const BorderSide(color: Colors.redAccent)),

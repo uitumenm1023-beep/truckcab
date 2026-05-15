@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _accent(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
 Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
 Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7);
@@ -13,9 +14,6 @@ Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : con
 Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5);
 Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
 
-const Color _purple = Color(0xFF89F336);
-const Color _orange = Color(0xFF89F336);
-const Color _green  = Color(0xFF89F336);
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -76,7 +74,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(ok ? 'Driver approved for delivery!' : (chat.errorMessage ?? 'Failed')),
-      backgroundColor: ok ? _green : Colors.redAccent,
+      backgroundColor: ok ? _accent(context) : Colors.redAccent,
     ));
   }
 
@@ -91,6 +89,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final auth   = context.watch<AppAuthProvider>();
     final uid    = auth.currentUserId ?? '';
     final dark   = _isDark(context);
+    final accent = _accent(context);
 
     return Scaffold(
       backgroundColor: _bg(context),
@@ -122,13 +121,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 final name = (um['name'] ?? um['email'] ?? 'User').toString();
                 final isOnline = um['isOnline'] == true;
                 return Row(children: [
-                  Container(width: 36, height: 36, decoration: BoxDecoration(color: _purple.withOpacity(0.15), shape: BoxShape.circle),
+                  Container(width: 36, height: 36, decoration: BoxDecoration(color: accent.withOpacity(0.15), shape: BoxShape.circle),
                     child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                      style: const TextStyle(color: _purple, fontWeight: FontWeight.w700, fontSize: 14)))),
+                      style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 14)))),
                   const SizedBox(width: 10),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(name, style: TextStyle(color: _textPri(context), fontSize: 14, fontWeight: FontWeight.w700)),
-                    Text(isOnline ? 'Online' : 'Offline', style: TextStyle(color: isOnline ? _green : _textSec(context), fontSize: 11)),
+                    Text(isOnline ? 'Online' : 'Offline', style: TextStyle(color: isOnline ? accent : _textSec(context), fontSize: 11)),
                   ]),
                 ]);
               },
@@ -156,12 +155,12 @@ class _ChatScreenState extends State<ChatScreen> {
                   margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: dark ? const Color(0xFF252525) : const Color(0xFFE5FFD0),
+                    color: dark ? const Color(0xFF252525) : const Color(0xFFCCE4E8),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: _purple.withOpacity(0.25)),
+                    border: Border.all(color: accent.withOpacity(0.25)),
                   ),
                   child: Row(children: [
-                    const Icon(Icons.verified_outlined, color: _purple, size: 20),
+                    Icon(Icons.verified_outlined, color: accent, size: 20),
                     const SizedBox(width: 10),
                     Expanded(child: Text('Ready to approve this driver for delivery?',
                       style: TextStyle(color: _textPri(context), fontSize: 13))),
@@ -170,7 +169,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       onTap: () => _finalApprove(rm),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(color: _purple, borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(12)),
                         child: const Text('Approve', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12))),
                     ),
                   ]),
@@ -182,7 +181,7 @@ class _ChatScreenState extends State<ChatScreen> {
         // Messages
         Expanded(
           child: chat.isLoading
-              ? const Center(child: CircularProgressIndicator(color: _purple))
+              ? Center(child: CircularProgressIndicator(color: accent))
               : chat.messages.isEmpty
                   ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Icon(Icons.chat_bubble_outline, color: _textSec(context), size: 40),
@@ -208,7 +207,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                             constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
                             decoration: BoxDecoration(
-                              color: isMine ? _purple : _card(context),
+                              color: isMine ? accent : _card(context),
                               borderRadius: BorderRadius.only(
                                 topLeft: const Radius.circular(18),
                                 topRight: const Radius.circular(18),
@@ -266,9 +265,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   duration: const Duration(milliseconds: 160),
                   width: 48, height: 48,
                   decoration: BoxDecoration(
-                    color: _isSending ? _purple.withOpacity(0.5) : _purple,
+                    color: _isSending ? accent.withOpacity(0.5) : accent,
                     shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: _purple.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))],
+                    boxShadow: [BoxShadow(color: accent.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))],
                   ),
                   child: _isSending
                       ? const Padding(padding: EdgeInsets.all(14),

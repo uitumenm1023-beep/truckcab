@@ -7,6 +7,7 @@ import '../../providers/chat_provider.dart';
 import '../../routes/app_routes.dart';
 
 bool _isDark(BuildContext ctx) => Theme.of(ctx).brightness == Brightness.dark;
+Color _accent(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF89F336) : const Color(0xFF4F7C82);
 Color _textPri(BuildContext ctx) => _isDark(ctx) ? const Color(0xFFF5F7FA) : const Color(0xFF1A2B2D);
 Color _textSec(BuildContext ctx) => _isDark(ctx) ? const Color(0xFF98A1AE) : const Color(0xFF2A4A50);
 Color _soft(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF3A3A3A) : const Color(0xFF7FA3A7);
@@ -14,8 +15,6 @@ Color _card(BuildContext ctx)    => _isDark(ctx) ? const Color(0xFF2C2C2C) : con
 Color _bg(BuildContext ctx)      => _isDark(ctx) ? const Color(0xFF1E1E1E) : const Color(0xFF93B1B5);
 Color _border(BuildContext ctx)  => _isDark(ctx) ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F);
 
-const Color _purple = Color(0xFF89F336);
-const Color _green  = Color(0xFF89F336);
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -41,6 +40,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final accent  = _accent(context);
     final chat    = context.watch<ChatProvider>();
     final uid     = context.watch<AppAuthProvider>().currentUserId ?? '';
 
@@ -58,7 +58,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         title: Text('Chats', style: TextStyle(color: _textPri(context), fontSize: 20, fontWeight: FontWeight.w700)),
       ),
       body: chat.isLoading
-          ? const Center(child: CircularProgressIndicator(color: _purple))
+          ? Center(child: CircularProgressIndicator(color: accent))
           : chat.chats.isEmpty
               ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.chat_bubble_outline, color: _textSec(context), size: 48),
@@ -92,6 +92,7 @@ class _ChatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accent(context);
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance.collection('users').doc(otherUserId).snapshots(),
       builder: (ctx, snap) {
@@ -112,7 +113,7 @@ class _ChatTile extends StatelessWidget {
                     style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 20)))),
                 Positioned(right: 0, bottom: 0,
                   child: Container(width: 13, height: 13,
-                    decoration: BoxDecoration(color: isOnline ? _green : const Color(0xFF9CA3AF),
+                    decoration: BoxDecoration(color: isOnline ? accent : const Color(0xFF9CA3AF),
                       shape: BoxShape.circle, border: Border.all(color: _card(context), width: 2)))),
               ]),
               const SizedBox(width: 12),
@@ -124,7 +125,7 @@ class _ChatTile extends StatelessWidget {
                   style: TextStyle(color: _textSec(context), fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
               ])),
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right, color: _purple, size: 20),
+              Icon(Icons.chevron_right, color: accent, size: 20),
             ]),
           ),
         );
