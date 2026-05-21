@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (role == AppRoles.driver) {
         Navigator.pushReplacementNamed(context, AppRoutes.driverHome);
       } else {
-        _snack('Invalid user role');
+        _snack('Account setup incomplete. Please contact support.');
       }
     } catch (_) {
       _snack('Failed to load user profile');

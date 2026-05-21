@@ -67,22 +67,30 @@ class AppAuthProvider extends ChangeNotifier {
   Future<void> _ensureDoc({required String uid, required String email, String? role}) async {
     final ref = _fs.collection('users').doc(uid);
     final doc = await ref.get();
+
     if (!doc.exists) {
+      // Only create the stub if we actually have a role — otherwise wait for
+      // signUpWithEmail/_createDoc to write the real document.
+      if (role == null) return;
       await ref.set({
         'userId': uid, 'email': email,
-        'role': role ?? 'user', 'isOnline': true,
+        'role': role, 'isOnline': true,
         'lastSeen': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return;
     }
-    final ex = doc.data() ?? <String, dynamic>{};
-    await ref.set({
-      'userId': uid, 'email': email,
-      'role': role ?? (ex['role'] ?? 'user'),
+
+    // Doc exists — only merge online status + email. Never downgrade a real role to 'user'.
+    final update = <String, dynamic>{
+      'userId': uid,
+      'email': email,
+      'isOnline': true,
       'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    };
+    if (role != null) update['role'] = role; // only override when explicitly given
+    await ref.set(update, SetOptions(merge: true));
   }
 
   // ── Email sign up ──────────────────────────────────────────────────────────
