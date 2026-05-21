@@ -86,6 +86,10 @@ class _AdminScreenState extends State<AdminScreen>
     _snack(ok ? 'Payment rejected' : 'Failed to reject');
   }
 
+  Future<void> _logout() async {
+    await context.read<AppAuthProvider>().logout();
+  }
+
   void _snack(String msg) =>
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(msg)));
@@ -114,7 +118,30 @@ class _AdminScreenState extends State<AdminScreen>
             color: textPri, fontWeight: FontWeight.w700, fontSize: 20)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        automaticallyImplyLeading: false,
         iconTheme: IconThemeData(color: textPri),
+        actions: [
+          GestureDetector(
+            onTap: _logout,
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.redAccent.withOpacity(0.3))),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.logout_rounded,
+                  color: Colors.redAccent, size: 16),
+                const SizedBox(width: 6),
+                const Text('Logout',
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 13, fontWeight: FontWeight.w700)),
+              ]),
+            ),
+          ),
+        ],
         bottom: TabBar(
           controller: _tab,
           indicatorColor: accent,
