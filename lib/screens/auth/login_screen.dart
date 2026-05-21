@@ -80,7 +80,9 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      if (role == AppRoles.seller) {
+      if (isAdmin) {
+        Navigator.pushReplacementNamed(context, AppRoutes.admin);
+      } else if (role == AppRoles.seller) {
         Navigator.pushReplacementNamed(context, AppRoutes.sellerHome);
       } else if (role == AppRoles.driver) {
         Navigator.pushReplacementNamed(context, AppRoutes.driverHome);
