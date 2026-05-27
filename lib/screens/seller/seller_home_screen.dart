@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_status.dart';
-import '../../main.dart';
 import '../../models/order_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
@@ -185,7 +184,7 @@ class _HomeTab extends StatelessWidget {
     final dark    = _isDark(context);
 
     final activeOrders = orders.sellerOrders
-        .where((o) => o.driverId != null && o.driverId!.isNotEmpty && o.status != AppStatus.delivered)
+        .where((o) => o.status != AppStatus.delivered)
         .toList();
 
     final pendingRequests = chat.chatRequests.where((d) {
@@ -215,11 +214,6 @@ class _HomeTab extends StatelessWidget {
             ])),
             const SizedBox(width: 10),
             GestureDetector(
-              onTap: () => context.toggleTheme(),
-              child: _IconBtn(icon: dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined, context: context),
-            ),
-            const SizedBox(width: 10),
-            GestureDetector(
               onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
               child: Stack(clipBehavior: Clip.none, children: [
                 _IconBtn(icon: Icons.notifications_outlined, context: context),
@@ -243,8 +237,8 @@ class _HomeTab extends StatelessWidget {
             const SizedBox(width: 14),
             Expanded(child: _QuickCard(
               label: 'Track Package', sublabel: 'All orders',
-              color: accent,
-              bgColor: dark ? const Color(0xFF1C1209) : accent.withOpacity(0.08),
+              color: const Color(0xFF1A1A1A),
+              bgColor: const Color(0xFF89F336),
               icon: Icons.local_shipping_outlined,
               onTap: () => Navigator.pushNamed(context, AppRoutes.sellerOrders),
             )),
@@ -252,7 +246,7 @@ class _HomeTab extends StatelessWidget {
           const SizedBox(height: 28),
           // Current shipment header
           Row(children: [
-            Text('Current Shipment', style: TextStyle(color: _textPri(context), fontSize: 18, fontWeight: FontWeight.w700)),
+            Text('My Orders', style: TextStyle(color: _textPri(context), fontSize: 18, fontWeight: FontWeight.w700)),
             const Spacer(),
             GestureDetector(
               onTap: () => Navigator.pushNamed(context, AppRoutes.sellerOrders),
@@ -299,7 +293,7 @@ class _HomeTab extends StatelessWidget {
                 child: Column(children: [
                   Icon(Icons.inbox_outlined, color: _textSec(context), size: 40),
                   const SizedBox(height: 10),
-                  Text('No active shipments', style: TextStyle(color: _textSec(context), fontSize: 14)),
+                  Text('No orders yet', style: TextStyle(color: _textSec(context), fontSize: 14)),
                   const SizedBox(height: 8),
                   GestureDetector(
                     onTap: () => Navigator.pushNamed(context, AppRoutes.createOrder),
@@ -369,49 +363,65 @@ class _ShipmentCard extends StatelessWidget {
 
   Color _sc(Color accent) {
     switch (order.status) {
+      case AppStatus.open:      return const Color(0xFF98A1AE);
       case AppStatus.accepted:  return accent;
       case AppStatus.pickedUp:  return const Color(0xFF3B82F6);
       case AppStatus.onTheWay:  return accent;
       case AppStatus.delivered: return accent;
-      default: return const Color(0xFF2A4A50);
+      default:                  return const Color(0xFF98A1AE);
     }
   }
   String get _sl {
     switch (order.status) {
+      case AppStatus.open:      return 'Open';
       case AppStatus.accepted:  return 'Accepted';
       case AppStatus.pickedUp:  return 'Picked Up';
       case AppStatus.onTheWay:  return 'On The Way';
       case AppStatus.delivered: return 'Delivered';
-      default: return order.status;
+      default:                  return order.status;
     }
   }
   double get _progress {
     switch (order.status) {
+      case AppStatus.open:      return 0.0;
       case AppStatus.accepted:  return 0.25;
       case AppStatus.pickedUp:  return 0.5;
       case AppStatus.onTheWay:  return 0.75;
       case AppStatus.delivered: return 1.0;
-      default: return 0.0;
+      default:                  return 0.0;
     }
   }
+  bool get _isOpenOrder => order.status == AppStatus.open;
   String get _chatId => '${order.id}_${order.sellerId}_${order.driverId ?? ''}';
 
   @override
   Widget build(BuildContext context) {
     final accent = _accent(context);
     final dark = _isDark(context);
+    final isActive = _isActive(order.status);
+    final cardBg = _isOpenOrder
+        ? (dark ? const Color(0xFF2C2C2C) : const Color(0xFFB5CDD0))
+        : isActive
+            ? const Color(0xFF2A5018)
+            : (dark ? const Color(0xFF252525) : const Color(0xFFD8EDD0));
+    final cardBorder = _isOpenOrder
+        ? (dark ? const Color(0x14B5CDD0) : const Color(0xFF5E8A8F))
+        : isActive
+            ? const Color(0xFF89F336)
+            : accent.withOpacity(0.2);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: dark ? const Color(0xFF252525) : accent.withOpacity(0.15),
+        color: cardBg,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: accent.withOpacity(0.2)),
+        border: Border.all(color: cardBorder),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(width: 42, height: 42,
-            decoration: BoxDecoration(color: dark ? Colors.white.withOpacity(0.08) : Colors.white, borderRadius: BorderRadius.circular(12)),
-            child: Icon(Icons.inventory_2_outlined, color: accent, size: 20)),
+            decoration: BoxDecoration(color: isActive ? const Color(0xFF3A6828) : (dark ? const Color(0xFF3A3A3A) : Colors.white), borderRadius: BorderRadius.circular(12)),
+            child: Icon(Icons.inventory_2_outlined, color: isActive ? const Color(0xFF89F336) : accent, size: 20)),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(order.description,
@@ -446,7 +456,16 @@ class _ShipmentCard extends StatelessWidget {
             maxLines: 1, overflow: TextOverflow.ellipsis)),
         ]),
         const SizedBox(height: 12),
-        _SellerChatBtn(order: order, chatId: _chatId),
+        if (_isOpenOrder)
+          Row(children: [
+            Icon(Icons.hourglass_empty_rounded,
+              color: _textSec(context), size: 14),
+            const SizedBox(width: 6),
+            Text('Waiting for a driver to accept',
+              style: TextStyle(color: _textSec(context), fontSize: 12)),
+          ])
+        else
+          _SellerChatBtn(order: order, chatId: _chatId),
       ]),
     );
   }
@@ -576,29 +595,24 @@ class _TrackCard extends StatelessWidget {
     final active    = _isActive(order.status);
     final delivered = order.status == AppStatus.delivered;
     final step      = _stepOf(order.status);
-    final dark      = _isDark(context);
 
     final cardColor = active
-        ? (dark ? const Color(0xFF1E3520) : const Color(0xFFD4EDD6))
+        ? const Color(0xFF2A5018)
         : _card(context);
     final borderColor = active
-        ? accent.withOpacity(0.6)
+        ? const Color(0xFF89F336)
         : delivered ? accent.withOpacity(0.2) : Colors.transparent;
 
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: cardColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: borderColor, width: 1.5),
-          boxShadow: active
-              ? [BoxShadow(
-                  color: accent.withOpacity(0.15),
-                  blurRadius: 20, offset: const Offset(0, 6))]
-              : null),
+          border: Border.all(color: borderColor, width: 1.5)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Text(_ordId(order.id),
@@ -698,30 +712,72 @@ class _ProgressTracker extends StatelessWidget {
   const _ProgressTracker(
       {required this.step, required this.accent, required this.soft});
   static const _labels = ['Posted', 'Accepted', 'In Transit', 'Delivered'];
+
   @override
-  Widget build(BuildContext context) => Column(children: [
-    Row(children: List.generate(4, (i) {
-      final done = i <= step;
-      return Expanded(child: Row(children: [
-        Container(width: 12, height: 12,
+  Widget build(BuildContext context) {
+    // Each dot is paired with its label in a Column so they're always aligned.
+    // Expanded lines fill the space between steps.
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (int i = 0; i < 4; i++) ...[
+          if (i > 0)
+            Expanded(
+              child: Padding(
+                // Vertically center the 2px line with the 12px dot (top offset = (12-2)/2 = 5)
+                padding: const EdgeInsets.only(top: 5.0),
+                child: Container(
+                  height: 2,
+                  color: i <= step ? accent : soft.withOpacity(0.3),
+                ),
+              ),
+            ),
+          _buildStep(i),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildStep(int i) {
+    final done    = i <= step;
+    final current = i == step;
+    final dotSize = current ? 16.0 : 12.0;
+    final dotColor = done ? accent : soft;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: dotSize, height: dotSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: done ? accent : soft,
+            color: dotColor,
+            boxShadow: current
+                ? [BoxShadow(
+                    color: accent.withOpacity(0.55),
+                    blurRadius: 10, spreadRadius: 2)]
+                : null,
             border: Border.all(
               color: done ? accent : soft.withOpacity(0.4),
-              width: 1.5))),
-        if (i < 3)
-          Expanded(child: Container(height: 2,
-            color: i < step ? accent : soft.withOpacity(0.3))),
-      ]));
-    })),
-    const SizedBox(height: 6),
-    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(4, (i) => Text(_labels[i],
-        style: TextStyle(
-          color: i <= step ? accent : soft,
-          fontSize: 9.5, fontWeight: FontWeight.w600)))),
-  ]);
+              width: current ? 2.0 : 1.5),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _labels[i],
+          style: TextStyle(
+            color: current
+                ? accent
+                : done
+                    ? accent.withOpacity(0.50)
+                    : soft,
+            fontSize: current ? 10.5 : 9.5,
+            fontWeight: current ? FontWeight.w800 : FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 // ── Package Detail Sheet ───────────────────────────────────────────────────────
@@ -826,19 +882,19 @@ class _PackageDetailSheet extends StatelessWidget {
                       fontWeight: FontWeight.w600, letterSpacing: 0.5)),
                   const SizedBox(height: 10),
                   Row(children: [
-                    _DetailItem(label: 'Description',
-                      value: order.description, flex: 2),
+                    Expanded(flex: 2, child: _DetailItem(label: 'Description',
+                      value: order.description)),
                     const SizedBox(width: 16),
-                    _DetailItem(label: 'Status',
-                      value: _statusLabel(order.status)),
+                    Expanded(child: _DetailItem(label: 'Status',
+                      value: _statusLabel(order.status))),
                   ]),
                   const SizedBox(height: 10),
                   Row(children: [
-                    _DetailItem(label: 'From',
-                      value: _cityOf(order.pickupLocation), flex: 2),
+                    Expanded(flex: 2, child: _DetailItem(label: 'From',
+                      value: _cityOf(order.pickupLocation))),
                     const SizedBox(width: 16),
-                    _DetailItem(label: 'To',
-                      value: _cityOf(order.dropoffLocation)),
+                    Expanded(child: _DetailItem(label: 'To',
+                      value: _cityOf(order.dropoffLocation))),
                   ]),
                   const SizedBox(height: 10),
                   _DetailItem(label: 'Price',
@@ -878,26 +934,31 @@ class _PackageDetailSheet extends StatelessWidget {
                         ? const Color(0xFF3A3A3A)
                         : const Color(0xFF7FA3A7)),
                   const SizedBox(height: 14),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                    Column(crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(children: [
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                      Text('From',
-                        style: TextStyle(color: _textSec(context),
-                          fontSize: 10)),
-                      Text(_cityOf(order.pickupLocation),
-                        style: TextStyle(color: _textPri(context),
-                          fontWeight: FontWeight.w700, fontSize: 14)),
-                    ]),
-                    Column(crossAxisAlignment: CrossAxisAlignment.end,
+                        Text('From',
+                          style: TextStyle(color: _textSec(context),
+                            fontSize: 10)),
+                        Text(_cityOf(order.pickupLocation),
+                          style: TextStyle(color: _textPri(context),
+                            fontWeight: FontWeight.w700, fontSize: 14),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ])),
+                    const SizedBox(width: 8),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                      Text('To',
-                        style: TextStyle(color: _textSec(context),
-                          fontSize: 10)),
-                      Text(_cityOf(order.dropoffLocation),
-                        style: TextStyle(color: _textPri(context),
-                          fontWeight: FontWeight.w700, fontSize: 14)),
-                    ]),
+                        Text('To',
+                          style: TextStyle(color: _textSec(context),
+                            fontSize: 10)),
+                        Text(_cityOf(order.dropoffLocation),
+                          style: TextStyle(color: _textPri(context),
+                            fontWeight: FontWeight.w700, fontSize: 14),
+                          textAlign: TextAlign.end,
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ])),
                   ]),
                 ]),
               ),
@@ -930,13 +991,10 @@ class _PackageDetailSheet extends StatelessWidget {
 
 class _DetailItem extends StatelessWidget {
   final String label, value;
-  final int flex;
-  const _DetailItem(
-      {required this.label, required this.value, this.flex = 1});
+  const _DetailItem({required this.label, required this.value});
   @override
   Widget build(BuildContext context) =>
-    Expanded(flex: flex, child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(label,
         style: const TextStyle(color: Colors.white70, fontSize: 10)),
       const SizedBox(height: 2),
@@ -944,7 +1002,7 @@ class _DetailItem extends StatelessWidget {
         style: const TextStyle(color: Colors.white,
           fontSize: 13, fontWeight: FontWeight.w700),
         maxLines: 2, overflow: TextOverflow.ellipsis),
-    ]));
+    ]);
 }
 
 class _DriverSection extends StatelessWidget {
@@ -1108,7 +1166,6 @@ class _ProfileTab extends StatelessWidget {
     final name    = profile?.displayName ?? 'Seller';
     final email   = auth.currentUserEmail ?? '';
     final online  = profile?.isOnline ?? false;
-    final dark    = _isDark(context);
     final isAdmin = profile?.isAdmin ?? false;
 
     return CustomScrollView(slivers: [
@@ -1135,10 +1192,9 @@ class _ProfileTab extends StatelessWidget {
                 style: TextStyle(color: online ? accent : _textSec(context), fontSize: 12, fontWeight: FontWeight.w600)),
             ]),
           ),
-          const SizedBox(height: 28),
-          _tile(context, dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-            dark ? 'Switch to Light Mode' : 'Switch to Dark Mode', () => context.toggleTheme()),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
+          _SubscriptionCard(profile: profile),
+          const SizedBox(height: 20),
           _tile(context, Icons.notifications_outlined, 'Notifications',
             () => Navigator.pushNamed(context, AppRoutes.notifications)),
           if (isAdmin) ...[
@@ -1174,6 +1230,66 @@ class _ProfileTab extends StatelessWidget {
           Icon(Icons.chevron_right, color: _textSec(ctx), size: 18),
         ]),
       ),
+    );
+  }
+}
+
+// ── Subscription Card (shared by seller & driver profile) ─────────────────────
+class _SubscriptionCard extends StatelessWidget {
+  final dynamic profile;
+  const _SubscriptionCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = Color(0xFF89F336);
+    final expiry = profile?.subscriptionExpiry as DateTime?;
+    final isActive = profile?.isSubscriptionActive as bool? ?? false;
+    final now = DateTime.now();
+    final daysLeft = expiry != null ? expiry.difference(now).inDays : null;
+
+    final statusText = isActive
+        ? (daysLeft != null ? '$daysLeft day${daysLeft != 1 ? 's' : ''} remaining' : 'Active')
+        : (expiry != null ? 'Subscription expired' : 'No active subscription');
+    final statusColor = isActive ? accent : Colors.redAccent;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _card(context),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: isActive ? accent.withOpacity(0.4) : Colors.redAccent.withOpacity(0.3)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.verified_rounded, color: statusColor, size: 20),
+          const SizedBox(width: 10),
+          Text('Subscription', style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 14)),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12)),
+            child: Text(isActive ? 'Active' : 'Inactive',
+              style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w700)),
+          ),
+        ]),
+        const SizedBox(height: 8),
+        Text(statusText, style: TextStyle(color: _textSec(context), fontSize: 13)),
+        if (!isActive) ...[
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, AppRoutes.subscription),
+            child: Container(
+              height: 42, alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: accent,
+                borderRadius: BorderRadius.circular(12)),
+              child: const Text('Retry Subscription',
+                style: TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.w700, fontSize: 13))),
+          ),
+        ],
+      ]),
     );
   }
 }

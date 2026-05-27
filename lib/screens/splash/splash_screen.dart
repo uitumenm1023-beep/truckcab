@@ -41,14 +41,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     if (user == null) {
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+      Navigator.pushReplacementNamed(context, AppRoutes.welcome);
       return;
     }
 
     // If email not verified, send back to login
     if (!user.emailVerified) {
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+      Navigator.pushReplacementNamed(context, AppRoutes.welcome);
       return;
     }
 
@@ -57,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       if (!mounted) return;
       if (!doc.exists) {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
+        Navigator.pushReplacementNamed(context, AppRoutes.welcome);
         return;
       }
       final data = doc.data() ?? {};
@@ -86,11 +86,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       } else if (role == AppRoles.driver) {
         Navigator.pushReplacementNamed(context, AppRoutes.driverHome);
       } else {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
+        Navigator.pushReplacementNamed(context, AppRoutes.welcome);
       }
     } catch (_) {
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+      Navigator.pushReplacementNamed(context, AppRoutes.welcome);
     }
   }
 

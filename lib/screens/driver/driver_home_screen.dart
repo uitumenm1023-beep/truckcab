@@ -1,13 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_status.dart';
-import '../../main.dart';
 import '../../models/order_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../routes/app_routes.dart';
@@ -88,12 +89,15 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       if (uid != null && uid.isNotEmpty) {
         context.read<OrderProvider>().startDriverActiveOrderListener(driverId: uid);
         context.read<NotificationProvider>().startNotificationsListener(uid);
+        context.read<ChatProvider>().startChatsListener(uid);
       }
     });
     _fetchDriverLocation();
   }
 
   Future<void> _fetchDriverLocation() async {
+    // Geolocator web support is unreliable on Chrome — skip to avoid freeze.
+    if (kIsWeb) return;
     try {
       final permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -101,7 +105,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         if (requested == LocationPermission.denied || requested == LocationPermission.deniedForever) return;
       }
       if (permission == LocationPermission.deniedForever) return;
-      final pos = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium));
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+      ).timeout(const Duration(seconds: 10), onTimeout: () => throw Exception('timeout'));
       if (mounted) setState(() => _driverPosition = pos);
     } catch (_) {}
   }
@@ -112,6 +118,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       context.read<OrderProvider>().stopAvailableOrdersListener();
       context.read<OrderProvider>().stopDriverActiveOrderListener();
       context.read<NotificationProvider>().stopNotificationsListener();
+      context.read<ChatProvider>().stopChatsListener();
     } catch (_) {}
     super.dispose();
   }
@@ -267,10 +274,6 @@ class _HomeTab extends StatelessWidget {
                 child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'D',
                   style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 20)))),
               const Spacer(),
-              GestureDetector(
-                onTap: () => context.toggleTheme(),
-                child: _IconBtn(icon: dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined, context: context)),
-              const SizedBox(width: 10),
               Builder(builder: (ctx) {
                 final unread = ctx.watch<NotificationProvider>().unreadCount;
                 return GestureDetector(
@@ -426,39 +429,39 @@ class _ActiveDeliveryPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = _accent(context);
-    final dark = _isDark(context);
+    const bg = Color(0xFF89F336);
+    const dark = Color(0xFF1A1A1A);
+    const darkMid = Color(0xFF2D2D2D);
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: dark ? const Color(0xFF0F1A12) : const Color(0xFF8EC4C8),
+        color: bg,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: accent.withOpacity(0.3)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Container(width: 10, height: 10, decoration: BoxDecoration(color: accent, shape: BoxShape.circle)),
+          Container(width: 10, height: 10, decoration: const BoxDecoration(color: dark, shape: BoxShape.circle)),
           const SizedBox(width: 8),
-          Text('Active Delivery', style: TextStyle(color: accent, fontSize: 13, fontWeight: FontWeight.w700)),
+          const Text('Active Delivery', style: TextStyle(color: dark, fontSize: 15, fontWeight: FontWeight.w800)),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: accent.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
-            child: Text(_statusLabel, style: TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.w700))),
+            decoration: BoxDecoration(color: Colors.black.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+            child: Text(_statusLabel, style: const TextStyle(color: dark, fontSize: 12, fontWeight: FontWeight.w700))),
         ]),
-        const SizedBox(height: 12),
-        Text(order.description, style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 15),
+        const SizedBox(height: 14),
+        Text(order.description, style: const TextStyle(color: dark, fontWeight: FontWeight.w800, fontSize: 17),
           maxLines: 1, overflow: TextOverflow.ellipsis),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Row(children: [
-          Icon(Icons.my_location_outlined, color: accent, size: 13),
+          const Icon(Icons.my_location_outlined, color: darkMid, size: 14),
           const SizedBox(width: 4),
-          Expanded(child: Text(order.pickupLocation, style: TextStyle(color: _textSec(context), fontSize: 12),
+          Expanded(child: Text(order.pickupLocation, style: const TextStyle(color: darkMid, fontSize: 12),
             maxLines: 1, overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 12),
-          Icon(Icons.flag_outlined, color: accent, size: 13),
+          const Icon(Icons.flag_outlined, color: darkMid, size: 14),
           const SizedBox(width: 4),
-          Expanded(child: Text(order.dropoffLocation, style: TextStyle(color: _textSec(context), fontSize: 12),
+          Expanded(child: Text(order.dropoffLocation, style: const TextStyle(color: darkMid, fontSize: 12),
             maxLines: 1, overflow: TextOverflow.ellipsis)),
         ]),
       ]),
@@ -498,6 +501,7 @@ class _AvailableOrderCard extends StatelessWidget {
     final hasPhotos = order.imageUrls.isNotEmpty;
     return GestureDetector(
       onTap: () => _showDetails(context),
+      behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -958,10 +962,9 @@ class _StatusBtn extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.35))),
-      child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 13))),
+        color: color,
+        borderRadius: BorderRadius.circular(14)),
+      child: Text(label, style: const TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.w700, fontSize: 13))),
   );
 }
 
@@ -996,17 +999,16 @@ class _DirectionsButton extends StatelessWidget {
       child: Container(
         height: 44, alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.35))),
+          color: color,
+          borderRadius: BorderRadius.circular(14)),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: color, size: 16),
+          Icon(icon, color: const Color(0xFF1A1A1A), size: 16),
           const SizedBox(width: 8),
           Text(label,
-            style: TextStyle(
-              color: color, fontWeight: FontWeight.w700, fontSize: 13)),
+            style: const TextStyle(
+              color: Color(0xFF1A1A1A), fontWeight: FontWeight.w700, fontSize: 13)),
           const SizedBox(width: 6),
-          Icon(Icons.navigation_rounded, color: color, size: 14),
+          const Icon(Icons.navigation_rounded, color: Color(0xFF1A1A1A), size: 14),
         ])),
     );
   }
@@ -1059,13 +1061,12 @@ class _DriverChatButton extends StatelessWidget {
                 arguments: ChatScreenArgs(chatId: chatId, title: order.description)),
               child: Container(height: 44, alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: accent.withOpacity(0.3))),
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.chat_bubble_outline, color: accent, size: 16),
-                  const SizedBox(width: 8),
-                  Text('Open Chat', style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 13)),
+                  color: accent,
+                  borderRadius: BorderRadius.circular(14)),
+                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.chat_bubble_outline, color: Color(0xFF1A1A1A), size: 16),
+                  SizedBox(width: 8),
+                  Text('Open Chat', style: TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.w700, fontSize: 13)),
                 ])),
             );
           },
@@ -1081,21 +1082,85 @@ class _ChatsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chat = context.watch<ChatProvider>();
+    final uid  = context.watch<AppAuthProvider>().currentUserId ?? '';
+
+    return CustomScrollView(slivers: [
+      SliverToBoxAdapter(child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 58, 20, 20),
+        child: Text('Chats', style: TextStyle(color: _textPri(context), fontSize: 28, fontWeight: FontWeight.w700)),
+      )),
+      chat.chats.isEmpty
+          ? SliverFillRemaining(child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.chat_bubble_outline, color: _textSec(context), size: 48),
+              const SizedBox(height: 12),
+              Text('No active chats', style: TextStyle(color: _textSec(context), fontSize: 15)),
+            ])))
+          : SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+              sliver: SliverList(delegate: SliverChildBuilderDelegate(
+                (ctx, i) {
+                  final doc      = chat.chats[i];
+                  final data     = doc.data() as Map<String, dynamic>;
+                  final sellerId = (data['sellerId'] ?? '').toString();
+                  final driverId = (data['driverId'] ?? '').toString();
+                  final otherId  = uid == sellerId ? driverId : sellerId;
+                  final desc     = (data['orderDescription'] ?? 'Chat').toString();
+                  final last     = (data['lastMessage'] ?? '').toString();
+                  return Padding(padding: const EdgeInsets.only(bottom: 10),
+                    child: _DriverChatTile(chatId: doc.id, otherUserId: otherId, description: desc, lastMessage: last));
+                },
+                childCount: chat.chats.length,
+              )),
+            ),
+    ]);
+  }
+}
+
+class _DriverChatTile extends StatelessWidget {
+  final String chatId, otherUserId, description, lastMessage;
+  const _DriverChatTile({required this.chatId, required this.otherUserId, required this.description, required this.lastMessage});
+
+  @override
+  Widget build(BuildContext context) {
     final accent = _accent(context);
-    return Center(
-      child: GestureDetector(
-        onTap: () => Navigator.pushNamed(context, AppRoutes.chatList),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          decoration: BoxDecoration(
-            color: _card(context),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: accent.withOpacity(0.4))),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.chat_bubble_outline, color: accent),
-            const SizedBox(width: 10),
-            Text('Open Chats', style: TextStyle(color: accent, fontWeight: FontWeight.w700, fontSize: 15)),
-          ]))));
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(otherUserId).snapshots(),
+      builder: (ctx, snap) {
+        final ud = snap.data?.data();
+        final um = ud is Map<String, dynamic> ? ud : <String, dynamic>{};
+        final name = (um['name'] ?? um['email'] ?? 'User').toString();
+        final isOnline = um['isOnline'] == true;
+        return GestureDetector(
+          onTap: () => Navigator.pushNamed(context, AppRoutes.chatScreen,
+            arguments: ChatScreenArgs(chatId: chatId, title: description)),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: _card(context), borderRadius: BorderRadius.circular(18), border: Border.all(color: _border(context))),
+            child: Row(children: [
+              Stack(clipBehavior: Clip.none, children: [
+                Container(width: 48, height: 48, decoration: BoxDecoration(color: _soft(context), shape: BoxShape.circle),
+                  child: Center(child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                    style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 18)))),
+                Positioned(right: 0, bottom: 0,
+                  child: Container(width: 12, height: 12,
+                    decoration: BoxDecoration(color: isOnline ? accent : const Color(0xFF9CA3AF),
+                      shape: BoxShape.circle, border: Border.all(color: _card(context), width: 2)))),
+              ]),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(description, style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 14),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(lastMessage.isEmpty ? 'No messages yet' : lastMessage,
+                  style: TextStyle(color: _textSec(context), fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ])),
+              Icon(Icons.chevron_right, color: accent, size: 20),
+            ]),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -1114,7 +1179,6 @@ class _ProfileTab extends StatelessWidget {
     final vehicle = profile?.vehicleType ?? '';
     final years   = profile?.yearsExperience ?? 0;
     final online  = profile?.isOnline ?? false;
-    final dark    = _isDark(context);
     final isAdmin = profile?.isAdmin ?? false;
 
     return CustomScrollView(slivers: [
@@ -1136,22 +1200,8 @@ class _ProfileTab extends StatelessWidget {
           _tile(context, '🕐 Experience', '$years year${years != 1 ? 's' : ''}'),
           const SizedBox(height: 10),
           _tile(context, '⚡ Status', online ? 'Online' : 'Offline', valueColor: online ? accent : _textSec(context)),
-          const SizedBox(height: 10),
-          GestureDetector(
-            onTap: () => context.toggleTheme(),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: _card(context), borderRadius: BorderRadius.circular(18), border: Border.all(color: _border(context))),
-              child: Row(children: [
-                Icon(dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined, color: accent, size: 20),
-                const SizedBox(width: 14),
-                Text(dark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-                  style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w600, fontSize: 14)),
-                const Spacer(),
-                Icon(Icons.chevron_right, color: _textSec(context), size: 18),
-              ]),
-            ),
-          ),
+          const SizedBox(height: 16),
+          _DriverSubscriptionCard(profile: profile),
           if (isAdmin) ...[
             const SizedBox(height: 10),
             GestureDetector(
@@ -1189,6 +1239,66 @@ class _ProfileTab extends StatelessWidget {
         Text(label, style: TextStyle(color: _textSec(ctx), fontSize: 14)),
         const Spacer(),
         Text(value, style: TextStyle(color: valueColor ?? _textPri(ctx), fontWeight: FontWeight.w700, fontSize: 14)),
+      ]),
+    );
+  }
+}
+
+// ── Driver Subscription Card ──────────────────────────────────────────────────
+class _DriverSubscriptionCard extends StatelessWidget {
+  final dynamic profile;
+  const _DriverSubscriptionCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = Color(0xFF89F336);
+    final expiry   = profile?.subscriptionExpiry as DateTime?;
+    final isActive = profile?.isSubscriptionActive as bool? ?? false;
+    final now      = DateTime.now();
+    final daysLeft = expiry != null ? expiry.difference(now).inDays : null;
+
+    final statusText = isActive
+        ? (daysLeft != null ? '$daysLeft day${daysLeft != 1 ? 's' : ''} remaining' : 'Active')
+        : (expiry != null ? 'Subscription expired' : 'No active subscription');
+    final statusColor = isActive ? accent : Colors.redAccent;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _card(context),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: isActive ? accent.withOpacity(0.4) : Colors.redAccent.withOpacity(0.3)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.verified_rounded, color: statusColor, size: 20),
+          const SizedBox(width: 10),
+          Text('Subscription', style: TextStyle(color: _textPri(context), fontWeight: FontWeight.w700, fontSize: 14)),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12)),
+            child: Text(isActive ? 'Active' : 'Inactive',
+              style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w700)),
+          ),
+        ]),
+        const SizedBox(height: 8),
+        Text(statusText, style: TextStyle(color: _textSec(context), fontSize: 13)),
+        if (!isActive) ...[
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, AppRoutes.subscription),
+            child: Container(
+              height: 42, alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: accent,
+                borderRadius: BorderRadius.circular(12)),
+              child: const Text('Retry Subscription',
+                style: TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.w700, fontSize: 13))),
+          ),
+        ],
       ]),
     );
   }

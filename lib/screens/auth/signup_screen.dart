@@ -92,7 +92,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   }
 
   void _back() {
-    if (_step == 0) { Navigator.pushReplacementNamed(context, AppRoutes.login); return; }
+    if (_step == 0) { Navigator.pushReplacementNamed(context, AppRoutes.welcome); return; }
     if (_step == 1) { _goStep(0); return; }
     if (_step == 2) { _goStep(1); return; }
     if (_step == 3 && _role == AppRoles.driver) { _goStep(2); return; }
@@ -277,7 +277,7 @@ class _StepRole extends StatelessWidget {
       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         Text('Already have an account? ', style: TextStyle(color: _textSec(context), fontSize: 13)),
         GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(ctx, AppRoutes.login),
+          onTap: () => Navigator.pushReplacementNamed(ctx, AppRoutes.welcome),
           child: Text('Login', style: TextStyle(color: _accent(context), fontWeight: FontWeight.w700, fontSize: 13))),
       ]),
     ]);

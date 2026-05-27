@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
+import '../screens/auth/welcome_screen.dart';
 import '../screens/chat/chat_list_screen.dart';
 import '../screens/chat/chat_screen.dart';
 import '../screens/driver/driver_active_order.dart';
@@ -28,6 +29,7 @@ class ChatScreenArgs {
 
 class AppRoutes {
   static const String splash = '/';
+  static const String welcome = '/welcome';
   static const String login = '/login';
   static const String signup = '/signup';
 
@@ -50,6 +52,9 @@ class AppRoutes {
     switch (settings.name) {
       case splash:
         return MaterialPageRoute(builder: (_) => const SplashScreen());
+
+      case welcome:
+        return MaterialPageRoute(builder: (_) => const WelcomeScreen());
 
       case login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());

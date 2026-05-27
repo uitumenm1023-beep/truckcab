@@ -87,7 +87,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
 
   @override
   void dispose() {
-    try { context.read<OrderProvider>().stopSellerOrdersListener(); } catch (_) {}
+    // Do NOT stop the listener here — SellerHomeScreen owns the lifecycle.
+    // Stopping it here kills the Track tab after navigating back.
     super.dispose();
   }
 
@@ -208,6 +209,7 @@ class _OrderCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(18),
@@ -344,38 +346,57 @@ class _ProgressTracker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      // Dots + lines
-      Row(children: List.generate(4, (i) {
-        final done = i <= step;
-        final isLast = i == 3;
-        return Expanded(child: Row(children: [
-          // Dot
-          Container(
-            width: 12, height: 12,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: done ? accent : soft,
-              border: Border.all(
-                color: done ? accent : soft.withOpacity(0.4),
-                width: 1.5))),
-          // Line
-          if (!isLast)
-            Expanded(child: Container(
-              height: 2,
-              color: i < step ? accent : soft.withOpacity(0.3))),
-        ]));
-      })),
-      const SizedBox(height: 6),
-      // Labels
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(4, (i) => Text(
+    // Each dot is paired with its label in a Column so they're always aligned.
+    // Expanded lines fill the space between steps.
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (int i = 0; i < 4; i++) ...[
+          if (i > 0)
+            Expanded(
+              child: Padding(
+                // Vertically center the 2px line with the 12px dot: (12-2)/2 = 5
+                padding: const EdgeInsets.only(top: 5.0),
+                child: Container(
+                  height: 2,
+                  color: i <= step ? accent : soft.withOpacity(0.3),
+                ),
+              ),
+            ),
+          _buildStep(i),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildStep(int i) {
+    final done    = i <= step;
+    final dotColor = done ? accent : soft;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 12, height: 12,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: dotColor,
+            border: Border.all(
+              color: done ? accent : soft.withOpacity(0.4),
+              width: 1.5),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
           _labels[i],
           style: TextStyle(
             color: i <= step ? accent : soft,
-            fontSize: 9.5, fontWeight: FontWeight.w600),
-        ))),
-    ]);
+            fontSize: 9.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -500,25 +521,23 @@ class _PackageDetailSheet extends StatelessWidget {
                       letterSpacing: 0.5)),
                   const SizedBox(height: 10),
                   Row(children: [
-                    _DetailItem(
+                    Expanded(flex: 2, child: _DetailItem(
                       label: 'Description',
-                      value: order.description,
-                      flex: 2),
+                      value: order.description)),
                     const SizedBox(width: 16),
-                    _DetailItem(
+                    Expanded(child: _DetailItem(
                       label: 'Status',
-                      value: _statusLabel(order.status)),
+                      value: _statusLabel(order.status))),
                   ]),
                   const SizedBox(height: 10),
                   Row(children: [
-                    _DetailItem(
+                    Expanded(flex: 2, child: _DetailItem(
                       label: 'From',
-                      value: _cityOf(order.pickupLocation),
-                      flex: 2),
+                      value: _cityOf(order.pickupLocation))),
                     const SizedBox(width: 16),
-                    _DetailItem(
+                    Expanded(child: _DetailItem(
                       label: 'To',
-                      value: _cityOf(order.dropoffLocation)),
+                      value: _cityOf(order.dropoffLocation))),
                   ]),
                   const SizedBox(height: 10),
                   _DetailItem(
@@ -566,29 +585,33 @@ class _PackageDetailSheet extends StatelessWidget {
                         ? const Color(0xFF3A3A3A)
                         : const Color(0xFF7FA3A7)),
                   const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                    Column(crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(children: [
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                      Text('From',
-                        style: TextStyle(
-                          color: _textSec(context), fontSize: 10)),
-                      Text(_cityOf(order.pickupLocation),
-                        style: TextStyle(
-                          color: _textPri(context),
-                          fontWeight: FontWeight.w700, fontSize: 14)),
-                    ]),
-                    Column(crossAxisAlignment: CrossAxisAlignment.end,
+                        Text('From',
+                          style: TextStyle(
+                            color: _textSec(context), fontSize: 10)),
+                        Text(_cityOf(order.pickupLocation),
+                          style: TextStyle(
+                            color: _textPri(context),
+                            fontWeight: FontWeight.w700, fontSize: 14),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ])),
+                    const SizedBox(width: 8),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                      Text('To',
-                        style: TextStyle(
-                          color: _textSec(context), fontSize: 10)),
-                      Text(_cityOf(order.dropoffLocation),
-                        style: TextStyle(
-                          color: _textPri(context),
-                          fontWeight: FontWeight.w700, fontSize: 14)),
-                    ]),
+                        Text('To',
+                          style: TextStyle(
+                            color: _textSec(context), fontSize: 10)),
+                        Text(_cityOf(order.dropoffLocation),
+                          style: TextStyle(
+                            color: _textPri(context),
+                            fontWeight: FontWeight.w700, fontSize: 14),
+                          textAlign: TextAlign.end,
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ])),
                   ]),
                 ]),
               ),
@@ -623,13 +646,10 @@ class _PackageDetailSheet extends StatelessWidget {
 
 class _DetailItem extends StatelessWidget {
   final String label, value;
-  final int flex;
-  const _DetailItem({
-    required this.label, required this.value, this.flex = 1});
+  const _DetailItem({required this.label, required this.value});
   @override
   Widget build(BuildContext context) {
-    return Expanded(flex: flex, child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(label,
         style: const TextStyle(color: Colors.white70, fontSize: 10)),
       const SizedBox(height: 2),
@@ -638,7 +658,7 @@ class _DetailItem extends StatelessWidget {
           color: Colors.white,
           fontSize: 13, fontWeight: FontWeight.w700),
         maxLines: 2, overflow: TextOverflow.ellipsis),
-    ]));
+    ]);
   }
 }
 
